@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { IS_DEMO, apiFetch, demoData, demoSummary } from './services/api';
 import SummaryCard from './components/SummaryCard';
+import POTable from './components/POTable';
 import { statusOf, fmt, fmtRp } from './utils/helpers';
 import './index.css';
 
@@ -52,10 +53,9 @@ export default function App() {
               <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`rata-rata ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
             </div>
             
-            <div className="table-card" style={{padding: '20px', marginTop: '20px', textAlign: 'center', color: 'var(--text3)'}}>
-               {/* Tabel data akan dimasukkan ke sini nanti di langkah berikutnya */}
-               Tabel Data Kendaraan ({allData.length} Data Termuat)
-            </div>
+            {/* Tabel Data dipanggil di sini */}
+            <POTable data={allData} />
+            
           </div>
         )}
       </div>
