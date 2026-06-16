@@ -72,8 +72,6 @@ export default function App() {
       {/* Modals */}
       {formOpen && <POForm editRow={formRow} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
       {detailRow && <DetailBiaya row={detailRow} onClose={() => setDetailRow(null)} />}
-      
-      {/* Sidebar */}
 	  
       {/* Sidebar */}
       <nav className="sidebar">
