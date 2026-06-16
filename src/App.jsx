@@ -68,10 +68,10 @@ export default function App() {
       {/* Modals */}
       {formOpen && <POForm editRow={formRow} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
       return (
-    <div className="layout">
-      {/* Modals */}
-      {formOpen && <POForm editRow={formRow} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
-      {detailRow && <DetailBiaya row={detailRow} onClose={() => setDetailRow(null)} />}
+		<div className="layout">
+		  {/* Modals */}
+		  {formOpen && <POForm editRow={formRow} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
+		  {detailRow && <DetailBiaya row={detailRow} onClose={() => setDetailRow(null)} />}
 	  
       {/* Sidebar */}
       <nav className="sidebar">
