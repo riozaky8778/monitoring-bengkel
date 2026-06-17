@@ -123,8 +123,8 @@ export default function App() {
             <span className="nav-icon">📊</span> Dashboard
           </button>
           <button className={`nav-item ${activeNav==='kendaraan'?'active':''}`} onClick={() => setActiveNav('kendaraan')}>
-            <span className="nav-icon">🚛</span> Data Kendaraan <span className="nav-badge">{s.total}</span>
-          </button>
+			  <span className="nav-icon">🚛</span> Data Kendaraan
+			</button>
 
           <div className="sidebar-section" style={{ marginTop:8 }}>Status Real-time</div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px' }}>
