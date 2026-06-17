@@ -5,7 +5,8 @@ import SummaryCard from './components/SummaryCard';
 import POTable from './components/POTable';
 import POForm from './components/POForm';
 import DetailBiaya from './components/DetailBiaya';
-import { DonutChart, LeadtimeChart } from './components/Charts';
+import { DonutChart, LeadtimeChart, DepoChart } from './components/Charts';
+import { DonutChart, LeadtimeChart, DepoChart } from './components/Charts';
 import { statusOf, fmt, fmtRp } from './utils/helpers';
 import './index.css';
 
@@ -52,6 +53,7 @@ export default function App() {
   const s = (() => {
     let selesai=0, proses=0, pending=0, totalBiaya=0;
     const bengkelCount = {};
+    const depoCount = {};                          // ← tambah ini
     const monthlyLt = {};
     let totalLt = 0, countLt = 0;
 
@@ -66,6 +68,8 @@ export default function App() {
       const bengkel = (r.BENGKEL || '').trim();
       if (bengkel) bengkelCount[bengkel] = (bengkelCount[bengkel] || 0) + 1;
 
+	const depo = (r.DEPO || 'Lainnya').trim();  // ← tambah ini
+      depoCount[depo] = (depoCount[depo] || 0) + 1; // ← tambah ini
       let lt = parseInt(r.LEADTIME);
       const tMasuk = new Date(r.TGL_MASUK);
       const tKeluar = new Date(r.TGL_KELUAR);
@@ -86,11 +90,14 @@ export default function App() {
     return { 
       total: allData.length, selesai, proses, pending, totalBiaya, 
       avgLeadtime: countLt > 0 ? (totalLt / countLt).toFixed(1) : 0, 
-      bengkelCount, monthlyLt 
+      bengkelCount, depoCount, monthlyLt         
     };
   })();
 
   const topBengkel = Object.entries(s.bengkelCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const depoChartData = Object.entries(s.depoCount)
+  .sort((a, b) => b[1] - a[1])
+  .map(([depo, count]) => ({ depo, count }));
   const maxBengkel = topBengkel[0]?.[1] || 1;
   const leadtimeChartData = Object.keys(s.monthlyLt).sort((a,b)=>a-b).map(m => ({
     bulan: parseInt(m), avg: Math.round((s.monthlyLt[m].sum / s.monthlyLt[m].count) * 10) / 10
@@ -184,9 +191,9 @@ export default function App() {
 
             <div className="charts-row">
               <div className="chart-card">
-                <div className="chart-card-header"><div className="chart-title">Status Perbaikan</div></div>
-                <DonutChart selesai={s.selesai||0} proses={s.proses||0} pending={s.pending||0} />
-              </div>
+			  <div className="chart-card-header"><div className="chart-title">Total Perbaikan By Depo</div></div>
+			  <DepoChart data={depoChartData} />
+			</div>
               <div className="chart-card">
                 <div className="chart-card-header">
                   <div className="chart-title">Top Bengkel</div>
