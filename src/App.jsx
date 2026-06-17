@@ -6,7 +6,6 @@ import POTable from './components/POTable';
 import POForm from './components/POForm';
 import DetailBiaya from './components/DetailBiaya';
 import { DonutChart, LeadtimeChart, DepoChart } from './components/Charts';
-import { DonutChart, LeadtimeChart, DepoChart } from './components/Charts';
 import { statusOf, fmt, fmtRp } from './utils/helpers';
 import './index.css';
 
@@ -53,7 +52,7 @@ export default function App() {
   const s = (() => {
     let selesai=0, proses=0, pending=0, totalBiaya=0;
     const bengkelCount = {};
-    const depoCount = {};                          // ← tambah ini
+    const depoCount = {};                          
     const monthlyLt = {};
     let totalLt = 0, countLt = 0;
 
@@ -68,8 +67,8 @@ export default function App() {
       const bengkel = (r.BENGKEL || '').trim();
       if (bengkel) bengkelCount[bengkel] = (bengkelCount[bengkel] || 0) + 1;
 
-	const depo = (r.DEPO || 'Lainnya').trim();  // ← tambah ini
-      depoCount[depo] = (depoCount[depo] || 0) + 1; // ← tambah ini
+      const depo = (r.DEPO || 'Lainnya').trim();  
+      depoCount[depo] = (depoCount[depo] || 0) + 1; 
       let lt = parseInt(r.LEADTIME);
       const tMasuk = new Date(r.TGL_MASUK);
       const tKeluar = new Date(r.TGL_KELUAR);
