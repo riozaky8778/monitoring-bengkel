@@ -141,7 +141,7 @@ export default function POForm({ editRow, onClose, onSaved }) {
       return;
     }
     apiFetch({ action: 'getKendaraan' })
-      .then(d => setKendaraanList(d.kendaraan || []))
+      .then(d => setKendaraanList(d.data || d.kendaraan || []))
       .catch(() => setKendaraanList([]))
       .finally(() => setLoadingKendaraan(false));
   }, []);
