@@ -181,12 +181,12 @@ export default function App() {
             
             {/* LIMA KOTAK DASBOR */}
             <div className="metrics-grid">
-              <SummaryCard label="Total Perbaikan" value={fmt(s.total)} sub="sepanjang 2026" icon="🔧" accent="var(--text)" iconBg="var(--surface3)" />
-              <SummaryCard label="Pending" value={fmt(s.pending)} sub="menunggu alat/antrean" icon="⏳" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
-              <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="masih dibongkar" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
-              <SummaryCard label="Selesai" value={fmt(s.selesai)} sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
-              <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`avg ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--red-t)" iconBg="var(--red-dim)" />
-            </div>
+			  <SummaryCard label="Total Perbaikan" value={fmt(s.total)} sub="" icon="🔧" accent="var(--text)" iconBg="var(--surface3)" />
+			  <SummaryCard label="Pending" value={fmt(s.pending)} sub="Menunggu alat/antrean" icon="⏳" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
+			  <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="Masih dibongkar" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
+			  <SummaryCard label="Selesai" value={fmt(s.selesai)} sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% Dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
+			  <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`Avg ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--red-t)" iconBg="var(--red-dim)" />
+			</div>
 
             <div className="charts-row">
               <div className="chart-card">
