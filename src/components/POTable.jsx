@@ -81,7 +81,7 @@ export default function POTable({
                     )}
                   </td>
                   <td style={{ textAlign:'center' }}>
-                    <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">✏️ Edit</button>
+                    <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit">✏️</button>
                   </td>
                 </tr>
               );

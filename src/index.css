@@ -1050,27 +1050,25 @@ tbody tr:hover td { background: var(--surface2); }
 @media (max-width: 1200px) {
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
   .charts-row   { grid-template-columns: 1fr 1fr; }
+  .table-wrap   { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table         { min-width: 860px; }
 }
 @media (max-width: 900px) {
   .charts-row { grid-template-columns: 1fr; }
 }
-/* ── Responsive table ── */
-@media (max-width: 1024px) {
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { min-width: 860px; }
-}
 @media (max-width: 768px) {
-  table { min-width: 700px; }
+  .sidebar      { display: none; }
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .content      { padding: 16px; }
+  .topbar       { padding: 0 16px; }
+  .form-grid    { grid-template-columns: 1fr; }
+  .item-row     { grid-template-columns: 90px 1fr 60px 100px 24px; }
+  .detail-summary { grid-template-columns: 1fr 1fr; }
   .table-header { flex-direction: column; align-items: flex-start; }
-  .filter-row { width: 100%; }
+  .filter-row   { width: 100%; }
   .filter-input { width: 100%; }
 }
-@media (max-width: 768px) {
-  .sidebar { display: none; }
-  .metrics-grid { grid-template-columns: 1fr 1fr; }
-  .content { padding: 16px; }
-  .topbar  { padding: 0 16px; }
-  .form-grid { grid-template-columns: 1fr; }
-  .item-row { grid-template-columns: 90px 1fr 60px 100px 24px; }
-  .detail-summary { grid-template-columns: 1fr 1fr; }
-}
+
+/* Tabel lebih compact supaya tidak terpotong di 100% zoom */
+th { padding: 10px 10px; }
+td { padding: 11px 10px; max-width: 140px; }
