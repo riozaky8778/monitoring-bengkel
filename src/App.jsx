@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { IS_DEMO, apiFetch, demoData } from './services/api';
+import { IS_DEMO, apiFetch, demoData, getKendaraan } from './services/api';
+import DataKendaraan from './components/DataKendaraan';
 import SummaryCard from './components/SummaryCard';
 import POTable from './components/POTable';
 import POForm from './components/POForm';
@@ -12,6 +13,7 @@ const PAGE_SIZE = 15;
 
 export default function App() {
   const [allData,  setAllData]  = useState([]);
+  const [kendaraan, setKendaraan] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [lastSync, setLastSync] = useState(null);
   const [activeNav, setActiveNav] = useState('dashboard');
@@ -28,13 +30,18 @@ export default function App() {
     setLoading(true);
     if (IS_DEMO) {
       setAllData(demoData().slice().reverse());
+      setKendaraan((await getKendaraan()));
       setLastSync(new Date());
       setLoading(false);
       return;
     }
     try {
-      const dataRes = await apiFetch({ action:'getData' });
+      const [dataRes, kendRes] = await Promise.all([
+        apiFetch({ action: 'getData' }),
+        getKendaraan(),
+      ]);
       setAllData((dataRes.data || []).slice().reverse());
+      setKendaraan(kendRes);
       setLastSync(new Date());
     } catch(e) { console.error(e); }
     finally    { setLoading(false); }
@@ -157,6 +164,13 @@ export default function App() {
         </div>
 
         {loading ? <div className="spinner" style={{margin:'50px auto'}}></div> : (
+          <div className="content" style={{ padding: 0 }}>
+
+            {activeNav === 'kendaraan' && (
+              <DataKendaraan data={kendaraan} loading={loading} />
+            )}
+
+            {activeNav === 'dashboard' && (
           <div className="content">
             
             {/* LIMA KOTAK DASBOR */}
@@ -205,6 +219,8 @@ export default function App() {
               openEditForm={(r) => { setFormRow(r); setFormOpen(true); }}
               setDetailRow={setDetailRow}
             />
+          </div>
+            )}
           </div>
         )}
       </div>

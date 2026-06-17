@@ -12,6 +12,12 @@ export async function apiPost(body) {
   return r.json();
 }
 
+export async function getKendaraan() {
+  if (IS_DEMO) return demoKendaraan();
+  const res = await apiFetch({ action: 'getKendaraan' });
+  return res.data || [];
+}
+
 export function demoData() {
   const kend = demoKendaraan();
   return Array.from({ length: 32 }, (_, i) => {
