@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiPost, apiFetch, IS_DEMO } from '../services/api';
 import { toDateInput, fmtRp } from '../utils/helpers';
+import { invalidateDetailCache } from './DetailBiaya';
 
 const EMPTY_ITEM = () => ({ TIPE:'JASA', NAMA:'', QTY:1, HARGA:0 });
 const EMPTY_PO   = () => ({
@@ -88,6 +89,7 @@ export default function POForm({ editRow, onClose, onSaved }) {
         items: items.filter(i => String(i.NAMA).trim()),
       });
       if (res.error) { alert('❌ ' + res.error); setSaving(false); return; }
+      invalidateDetailCache(po.NO_PO); // ← tambahkan ini
       onSaved();
     } catch(e) {
       alert('Error: ' + e.message);

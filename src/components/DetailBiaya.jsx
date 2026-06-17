@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { IS_DEMO, apiFetch } from '../services/api';
-import { formatTgl, fmtRp, statusOf } from '../utils/helpers';
+import { fmtRp, statusOf } from '../utils/helpers';
+
+// Cache di luar komponen — persist selama halaman tidak di-refresh
+const detailCache = {};
 
 export default function DetailBiaya({ row, onClose }) {
   const [items, setItems] = useState(null);
@@ -8,25 +11,43 @@ export default function DetailBiaya({ row, onClose }) {
 
   useEffect(() => {
     if (!row) return;
+
     if (IS_DEMO) {
       setItems([
-        { TIPE:'JASA',      NAMA:'GANTI DRAGLINK', QTY:1, HARGA:180000, SUBTOTAL:180000 },
-        { TIPE:'SPAREPART', NAMA:'GANTI KIT PEDAL REM', QTY:1, HARGA:250000, SUBTOTAL:250000 },
-        { TIPE:'SPAREPART', NAMA:'PERBAIKAN KABEL LAMPU BAK', QTY:2, HARGA:75000, SUBTOTAL:150000 },
+        { TIPE:'JASA',      NAMA:'GANTI DRAGLINK',                            QTY:1, HARGA:180000, SUBTOTAL:180000 },
+        { TIPE:'SPAREPART', NAMA:'GANTI KIT PEDAL REM',                       QTY:1, HARGA:250000, SUBTOTAL:250000 },
+        { TIPE:'SPAREPART', NAMA:'PERBAIKAN KABEL LAMPU BAK',                 QTY:2, HARGA:75000,  SUBTOTAL:150000 },
         { TIPE:'JASA',      NAMA:'ONGKOS LAS TAPAK ENGSEL PINTU KANAN KIRI', QTY:1, HARGA:320000, SUBTOTAL:320000 },
       ]);
       setLoading(false);
       return;
     }
-    apiFetch({ action:'getDetail', no_po:row.NO_PO })
-      .then(d => { setItems(d.items||[]); setLoading(false); })
-      .catch(()  => { setItems([]);      setLoading(false); });
+
+    const key = String(row.NO_PO);
+
+    // Kalau sudah di-cache, langsung tampil tanpa loading
+    if (detailCache[key]) {
+      setItems(detailCache[key]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    apiFetch({ action: 'getDetail', no_po: key })
+      .then(d => {
+        const result = d.items || [];
+        detailCache[key] = result; // simpan ke cache
+        setItems(result);
+      })
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+
   }, [row]);
 
   if (!row) return null;
   const status         = statusOf(row.KETERANGAN || row.KET || '');
-  const totalJasa      = (items||[]).filter(i=>i.TIPE==='JASA').reduce((s,i)=>s+i.SUBTOTAL,0);
-  const totalSparepart = (items||[]).filter(i=>i.TIPE==='SPAREPART').reduce((s,i)=>s+i.SUBTOTAL,0);
+  const totalJasa      = (items||[]).filter(i => i.TIPE==='JASA').reduce((s,i) => s+i.SUBTOTAL, 0);
+  const totalSparepart = (items||[]).filter(i => i.TIPE==='SPAREPART').reduce((s,i) => s+i.SUBTOTAL, 0);
   const totalAll       = totalJasa + totalSparepart;
 
   return (
@@ -38,14 +59,16 @@ export default function DetailBiaya({ row, onClose }) {
         </div>
         <div className="modal-body">
           <div className="detail-summary">
-            <div className="detail-kv"><div className="detail-kv-label">Nopol</div><div className="detail-kv-val">{row.NOPOL || '—'}</div></div>
-            <div className="detail-kv"><div className="detail-kv-label">Driver</div><div className="detail-kv-val">{row.DRIVER || '—'}</div></div>
-            <div className="detail-kv"><div className="detail-kv-label">Bengkel</div><div className="detail-kv-val">{row.BENGKEL || '—'}</div></div>
+            <div className="detail-kv"><div className="detail-kv-label">Nopol</div><div className="detail-kv-val">{row.NOPOL||'—'}</div></div>
+            <div className="detail-kv"><div className="detail-kv-label">Driver</div><div className="detail-kv-val">{row.DRIVER||'—'}</div></div>
+            <div className="detail-kv"><div className="detail-kv-label">Bengkel</div><div className="detail-kv-val">{row.BENGKEL||'—'}</div></div>
             <div className="detail-kv"><div className="detail-kv-label">Status</div><div className="detail-kv-val"><span className={`pill pill-${status.toLowerCase()}`}>{status}</span></div></div>
           </div>
 
           {loading ? (
-            <div style={{ display:'flex', justifyContent:'center', padding:32 }}><div className="spinner" /></div>
+            <div style={{ display:'flex', justifyContent:'center', padding:32 }}>
+              <div className="spinner" />
+            </div>
           ) : items && items.length > 0 ? (
             <div className="table-wrap">
               <table className="detail-table">
@@ -60,7 +83,7 @@ export default function DetailBiaya({ row, onClose }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item,i) => (
+                  {items.map((item, i) => (
                     <tr key={i}>
                       <td style={{ color:'var(--text3)' }}>{i+1}</td>
                       <td><span className={`pill-tipe ${item.TIPE==='JASA'?'tipe-jasa':'tipe-sparepart'}`}>{item.TIPE}</span></td>
@@ -97,4 +120,9 @@ export default function DetailBiaya({ row, onClose }) {
       </div>
     </div>
   );
+}
+
+// Export fungsi invalidate cache — dipanggil setelah edit PO berhasil
+export function invalidateDetailCache(no_po) {
+  delete detailCache[String(no_po)];
 }
