@@ -127,6 +127,7 @@ export default function POForm({ editRow, onClose, onSaved }) {
   const [loadingItems, setLoadingItems] = useState(isEdit);
   const [saving,       setSaving]       = useState(false);
   const [errors,       setErrors]       = useState({});
+  const [autoFilled,   setAutoFilled]   = useState({ DRIVER: false, DEPO: false, JENIS_MOBIL: false });
 
   // master kendaraan
   const [kendaraanList,    setKendaraanList]    = useState([]);
@@ -160,19 +161,21 @@ export default function POForm({ editRow, onClose, onSaved }) {
 
   // ── handler saat nopol dipilih → auto-fill ──────────────────
   const handleNopolSelect = useCallback((kendaraan) => {
-    if (!kendaraan) {
-      // user sedang mengetik manual, update NOPOL saja
-      return;
-    }
+    if (!kendaraan) return;
     setPo(p => ({
       ...p,
       NOPOL:       kendaraan.NOPOL,
       JENIS_MOBIL: kendaraan.TYPE || kendaraan.JENIS_ARMADA || p.JENIS_MOBIL,
-      DRIVER:      kendaraan.DRIVER || p.DRIVER,
-      DEPO:        kendaraan.DEPO   || p.DEPO,
+      DRIVER:      kendaraan.DRIVER || '',
+      DEPO:        kendaraan.DEPO   || '',
       DIVISI:      kendaraan.DIVISI || p.DIVISI,
     }));
-    // clear error nopol jika ada
+    // tandai field mana yang benar-benar dari master
+    setAutoFilled({
+      DRIVER:      !!kendaraan.DRIVER,
+      DEPO:        !!kendaraan.DEPO,
+      JENIS_MOBIL: !!(kendaraan.TYPE || kendaraan.JENIS_ARMADA),
+    });
     setErrors(er => ({ ...er, NOPOL: '' }));
   }, []);
 
@@ -281,42 +284,42 @@ export default function POForm({ editRow, onClose, onSaved }) {
             <div className="form-group">
               <label className="form-label">
                 Driver
-                {po.DRIVER && <span style={{ marginLeft:5, fontSize:9, background:'var(--green-bg)', color:'var(--green-t)', padding:'1px 5px', borderRadius:3, fontWeight:700 }}>AUTO</span>}
+                {autoFilled.DRIVER && <span style={{ marginLeft:5, fontSize:9, background:'var(--green-bg)', color:'var(--green-t)', padding:'1px 5px', borderRadius:3, fontWeight:700 }}>AUTO</span>}
               </label>
               <input
                 className="form-input"
                 value={po.DRIVER || ''}
-                onChange={e => setPo(p => ({ ...p, DRIVER: e.target.value }))}
+                onChange={e => { setPo(p => ({ ...p, DRIVER: e.target.value })); setAutoFilled(a => ({ ...a, DRIVER: false })); }}
                 placeholder="Nama driver"
-                style={po.DRIVER ? { borderColor: 'var(--green)', background: 'var(--green-bg)', color:'var(--green-t)' } : {}}
+                style={autoFilled.DRIVER ? { borderColor: 'var(--green)', background: 'var(--green-bg)', color:'var(--green-t)' } : {}}
               />
             </div>
 
             <div className="form-group">
               <label className="form-label">
                 Depo
-                {po.DEPO && <span style={{ marginLeft:5, fontSize:9, background:'var(--green-bg)', color:'var(--green-t)', padding:'1px 5px', borderRadius:3, fontWeight:700 }}>AUTO</span>}
+                {autoFilled.DEPO && <span style={{ marginLeft:5, fontSize:9, background:'var(--green-bg)', color:'var(--green-t)', padding:'1px 5px', borderRadius:3, fontWeight:700 }}>AUTO</span>}
               </label>
               <input
                 className="form-input"
                 value={po.DEPO || ''}
-                onChange={e => setPo(p => ({ ...p, DEPO: e.target.value }))}
+                onChange={e => { setPo(p => ({ ...p, DEPO: e.target.value })); setAutoFilled(a => ({ ...a, DEPO: false })); }}
                 placeholder="Nama depo"
-                style={po.DEPO ? { borderColor: 'var(--green)', background: 'var(--green-bg)', color:'var(--green-t)' } : {}}
+                style={autoFilled.DEPO ? { borderColor: 'var(--green)', background: 'var(--green-bg)', color:'var(--green-t)' } : {}}
               />
             </div>
 
             <div className="form-group">
               <label className="form-label">
                 Jenis / Type Kendaraan
-                {po.JENIS_MOBIL && <span style={{ marginLeft:5, fontSize:9, background:'var(--green-bg)', color:'var(--green-t)', padding:'1px 5px', borderRadius:3, fontWeight:700 }}>AUTO</span>}
+                {autoFilled.JENIS_MOBIL && <span style={{ marginLeft:5, fontSize:9, background:'var(--green-bg)', color:'var(--green-t)', padding:'1px 5px', borderRadius:3, fontWeight:700 }}>AUTO</span>}
               </label>
               <input
                 className="form-input"
                 value={po.JENIS_MOBIL || ''}
-                onChange={e => setPo(p => ({ ...p, JENIS_MOBIL: e.target.value }))}
+                onChange={e => { setPo(p => ({ ...p, JENIS_MOBIL: e.target.value })); setAutoFilled(a => ({ ...a, JENIS_MOBIL: false })); }}
                 placeholder="Contoh: L300, R6 Long, ..."
-                style={po.JENIS_MOBIL ? { borderColor: 'var(--green)', background: 'var(--green-bg)', color:'var(--green-t)' } : {}}
+                style={autoFilled.JENIS_MOBIL ? { borderColor: 'var(--green)', background: 'var(--green-bg)', color:'var(--green-t)' } : {}}
               />
             </div>
 
