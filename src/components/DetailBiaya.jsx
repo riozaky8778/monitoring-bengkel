@@ -46,6 +46,14 @@ export default function DetailBiaya({ row, onClose }) {
             <div className="detail-kv"><div className="detail-kv-label">Status</div><div className="detail-kv-val"><span className={`pill pill-${status.toLowerCase()}`}>{status}</span></div></div>
           </div>
 
+          {/* KOTAK KHUSUS KELUHAN / REASON */}
+          {row.REASON && (
+            <div style={{ background: 'var(--bg2)', padding: '12px 16px', borderRadius: 'var(--radius-sm)', marginBottom: '20px', borderLeft: '3px solid var(--amber)' }}>
+              <div style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: '4px' }}>Keluhan / Reason:</div>
+              <div style={{ fontSize: '12.5px', color: 'var(--text)', fontStyle: 'italic', lineHeight: '1.5' }}>"{row.REASON}"</div>
+            </div>
+          )}
+
           {loading ? (
             <div style={{ display:'flex', justifyContent:'center', padding:32 }}><div className="spinner" /></div>
           ) : items && items.length > 0 ? (

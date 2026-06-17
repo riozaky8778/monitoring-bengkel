@@ -39,7 +39,7 @@ export default function POTable({
               <th>PO & Tgl</th>
               <th>Kendaraan</th>
               <th>Driver & Depo</th>
-              <th>Bengkel</th>
+              <th>Bengkel & Keluhan</th>
               <th>Jadwal Bengkel</th>
               <th>Status</th>
               <th>Total Biaya</th>
@@ -82,8 +82,15 @@ export default function POTable({
                     <div style={{ fontSize:'10.5px', color:'var(--text3)', marginTop:3 }}>{r.DEPO||'—'}</div>
                   </td>
 
-                  {/* 4. Bengkel */}
-                  <td style={{ fontWeight:500 }}>{r.BENGKEL}</td>
+                  {/* 4. Bengkel & Keluhan (REASON) */}
+                  <td style={{ whiteSpace: 'normal', minWidth: '180px' }}>
+                    <div style={{ fontWeight:600, color:'var(--blue-t)' }}>{r.BENGKEL}</div>
+                    {r.REASON && (
+                      <div style={{ fontSize:'11px', color:'var(--text2)', marginTop:4, fontStyle:'italic', lineHeight:'1.4' }}>
+                        💬 "{r.REASON}"
+                      </div>
+                    )}
+                  </td>
 
                   {/* 5. Timeline Bengkel */}
                   <td>
