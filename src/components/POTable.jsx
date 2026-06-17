@@ -46,7 +46,7 @@ export default function POTable({
               <th>Tgl Keluar</th>
               <th>Status</th>
               <th>Total Biaya</th>
-              <th>Aksi</th>
+              <th style={{ textAlign:'center' }}>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -80,7 +80,7 @@ export default function POTable({
                       <span style={{ color:'var(--text3)' }}>—</span>
                     )}
                   </td>
-                  <td>
+                  <td style={{ textAlign:'center' }}>
                     <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">✏️ Edit</button>
                   </td>
                 </tr>
@@ -89,6 +89,7 @@ export default function POTable({
           </tbody>
         </table>
       </div>
+
       <div className="table-footer">
         <span>Halaman {page} dari {totalPages}</span>
         <div className="pagination">

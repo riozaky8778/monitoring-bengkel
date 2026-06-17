@@ -43,7 +43,8 @@ export default function App() {
         apiFetch({ action:'getData' }),
       ]);
       setSummary(sumRes.summary);
-      setAllData(dataRes.data || []);
+	// ✅ Reverse supaya data terbaru (baris terakhir di sheet) tampil pertama
+	setAllData((dataRes.data || []).slice().reverse());
       setLastSync(new Date());
     } catch(e) { console.error(e); }
     finally    { setLoading(false); }
