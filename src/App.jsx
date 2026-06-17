@@ -174,7 +174,7 @@ export default function App() {
             )}
 
             <div className="metrics-grid">
-              <SummaryCard label="Total Kendaraan" value={fmt(s.total)} sub="sepanjang 2026" icon="🚛" accent="var(--text)" iconBg="var(--surface3)" />
+              <SummaryCard label="Total Perbaikan" value={fmt(s.total)} sub="sepanjang 2026" icon="🔧" accent="var(--text)" iconBg="var(--surface3)" />
               <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="masih di bengkel" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
               <SummaryCard label="Selesai" value={fmt(s.selesai)} sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
               <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`rata-rata ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
@@ -184,7 +184,7 @@ export default function App() {
             <div className="charts-row">
               <div className="chart-card">
                 <div className="chart-card-header">
-                  <div className="chart-title">Status Kendaraan</div>
+                  <div className="chart-title">Status Perbaikan</div>
                 </div>
                 <DonutChart selesai={s.selesai||0} proses={s.proses||0} pending={s.pending||0} />
               </div>
