@@ -36,16 +36,11 @@ export default function POTable({
         <table>
           <thead>
             <tr>
-              <th>No PO</th>
-              <th>Tgl Pengajuan</th>
-              <th>Nopol</th>
-              <th>Driver</th>
-              <th>Depo</th>
-              <th>Jenis</th>
-              <th>KM</th>
+              <th>PO & Tgl</th>
+              <th>Kendaraan</th>
+              <th>Driver & Depo</th>
               <th>Bengkel</th>
-              <th>Tgl Masuk</th>
-              <th>Tgl Keluar</th>
+              <th>Jadwal Bengkel</th>
               <th>Status</th>
               <th>Total Biaya</th>
               <th>Aksi</th>
@@ -54,7 +49,7 @@ export default function POTable({
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={13} style={{ textAlign:'center', color:'var(--text3)', padding:32 }}>
+                <td colSpan={8} style={{ textAlign:'center', color:'var(--text3)', padding:32 }}>
                   Tidak ada data yang sesuai filter
                 </td>
               </tr>
@@ -64,17 +59,46 @@ export default function POTable({
               const biaya  = Number(r.TOTAL_BIAYA||r.BIAYA) || 0;
               return (
                 <tr key={r.NO_PO || i}>
-                  <td><span className="td-nopo">{r.NO_PO||'—'}</span></td>
-                  <td style={{ color:'var(--text2)' }}>{formatTgl(r.TGL_PENGAJUAN)}</td>
-                  <td><span className="td-nopol">{r.NOPOL}</span></td>
-                  <td>{r.DRIVER}</td>
-                  <td>{r.DEPO}</td>
-                  <td>{r.JENIS_MOBIL||r.JENIS}</td>
-                  <td>{r.KM ? fmt(r.KM) : '—'}</td>
-                  <td>{r.BENGKEL}</td>
-                  <td style={{ color:'var(--text2)' }}>{formatTgl(r.TGL_MASUK)}</td>
-                  <td style={{ color:'var(--text2)' }}>{formatTgl(r.TGL_KELUAR)}</td>
+                  
+                  {/* 1. PO & Tgl Pengajuan */}
+                  <td>
+                    <div className="td-nopo">{r.NO_PO||'—'}</div>
+                    <div style={{ fontSize:'10.5px', color:'var(--text3)', marginTop:3 }}>
+                      {formatTgl(r.TGL_PENGAJUAN)}
+                    </div>
+                  </td>
+                  
+                  {/* 2. Nopol + KM + Jenis */}
+                  <td>
+                    <div className="td-nopol">{r.NOPOL}</div>
+                    <div style={{ fontSize:'10.5px', color:'var(--text3)', marginTop:3 }}>
+                      {r.KM ? `${fmt(r.KM)} KM` : '—'} • {r.JENIS_MOBIL||r.JENIS||'—'}
+                    </div>
+                  </td>
+
+                  {/* 3. Driver & Depo */}
+                  <td>
+                    <div style={{ fontWeight:600, color:'var(--text)' }}>{r.DRIVER||'—'}</div>
+                    <div style={{ fontSize:'10.5px', color:'var(--text3)', marginTop:3 }}>{r.DEPO||'—'}</div>
+                  </td>
+
+                  {/* 4. Bengkel */}
+                  <td style={{ fontWeight:500 }}>{r.BENGKEL}</td>
+
+                  {/* 5. Timeline Bengkel */}
+                  <td>
+                    <div style={{ fontSize:'11.5px', color:'var(--text2)' }}>
+                      <span style={{color:'var(--blue-t)', fontWeight:700, marginRight:5}}>In:</span>{formatTgl(r.TGL_MASUK)}
+                    </div>
+                    <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:3 }}>
+                      <span style={{fontWeight:600, marginRight:5}}>Out:</span>{formatTgl(r.TGL_KELUAR)}
+                    </div>
+                  </td>
+
+                  {/* 6. Status */}
                   <td><span className={`pill pill-${status.toLowerCase()}`}>{status}</span></td>
+                  
+                  {/* 7. Biaya */}
                   <td>
                     {biaya > 0 ? (
                       <button className="biaya-btn" onClick={() => setDetailRow(r)}>
@@ -84,9 +108,12 @@ export default function POTable({
                       <span style={{ color:'var(--text3)' }}>—</span>
                     )}
                   </td>
+
+                  {/* 8. Aksi */}
                   <td>
                     <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">✏️ Edit</button>
                   </td>
+                  
                 </tr>
               );
             })}
