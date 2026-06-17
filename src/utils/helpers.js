@@ -1,25 +1,33 @@
-export const fmt = n => Number(n || 0).toLocaleString('id-ID');
-export const fmtRp = n => 'Rp ' + fmt(n);
+export const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
 
-export const toDateInput = (val) => {
-  if (!val) return '';
-  const d = new Date(val);
+export const formatTgl = (tgl) => {
+  if (!tgl) return '—';
+  const d = new Date(tgl);
+  if (isNaN(d)) return String(tgl);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+export const toDateInput = (tgl) => {
+  if (!tgl) return '';
+  const d = new Date(tgl);
   if (isNaN(d)) return '';
   return d.toISOString().split('T')[0];
 };
 
-export const formatTgl = (val) => {
-  if (!val) return '—';
-  const d = new Date(val);
-  if (isNaN(d)) return String(val);
-  return d.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' });
+export const fmtRp = (num) => {
+  if (!num || isNaN(num)) return 'Rp 0';
+  return 'Rp ' + Number(num).toLocaleString('id-ID');
 };
 
-export function statusOf(ket = '') {
-  const k = ket.toUpperCase();
-  if (k.includes('SELESAI')) return 'SELESAI';
-  if (k.includes('PROSES'))  return 'PROSES';
-  return 'PENDING';
-}
+export const fmt = (num) => {
+  if (!num || isNaN(num)) return '0';
+  return Number(num).toLocaleString('id-ID');
+};
 
-export const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+// Mesin Penyortir Status Otomatis
+export const statusOf = (keterangan) => {
+  const ket = String(keterangan || '').toUpperCase();
+  if (ket.includes('SELESAI')) return 'SELESAI';
+  if (ket.includes('PROSES') || ket.includes('PERBAIKAN')) return 'PROSES';
+  return 'PENDING';
+};

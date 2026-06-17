@@ -16,12 +16,10 @@ export default function App() {
   const [lastSync, setLastSync] = useState(null);
   const [activeNav, setActiveNav] = useState('dashboard');
   
-  // State Table & Filter
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [page, setPage] = useState(1);
 
-  // State Modals
   const [formRow, setFormRow] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [detailRow, setDetailRow] = useState(null);
@@ -35,10 +33,7 @@ export default function App() {
       return;
     }
     try {
-      // Kita HAPUS getSummary dari API, biarkan Frontend yang menghitung otomatis!
       const dataRes = await apiFetch({ action:'getData' });
-      
-      // ✅ Menggunakan idemu: Reverse supaya data terbaru (baris terakhir di sheet) tampil pertama
       setAllData((dataRes.data || []).slice().reverse());
       setLastSync(new Date());
     } catch(e) { console.error(e); }
@@ -47,9 +42,6 @@ export default function App() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ==========================================
-  // MESIN KALKULATOR DASBOR (100% OTOMATIS)
-  // ==========================================
   const s = (() => {
     let selesai=0, proses=0, pending=0, totalBiaya=0;
     const bengkelCount = {};
@@ -57,7 +49,6 @@ export default function App() {
     let totalLt = 0, countLt = 0;
 
     allData.forEach(r => {
-      // 1. Hitung Status & Biaya
       const stat = statusOf(r.KETERANGAN || r.KET || '');
       if (stat === 'SELESAI') selesai++;
       else if (stat === 'PROSES') proses++;
@@ -65,11 +56,9 @@ export default function App() {
       
       totalBiaya += Number(r.TOTAL_BIAYA || r.BIAYA) || 0;
 
-      // 2. Hitung Top Bengkel
       const bengkel = (r.BENGKEL || '').trim();
       if (bengkel) bengkelCount[bengkel] = (bengkelCount[bengkel] || 0) + 1;
 
-      // 3. Hitung Leadtime (Durasi Perbaikan)
       let lt = parseInt(r.LEADTIME);
       const tMasuk = new Date(r.TGL_MASUK);
       const tKeluar = new Date(r.TGL_KELUAR);
@@ -94,14 +83,12 @@ export default function App() {
     };
   })();
 
-  // Data untuk Grafik
   const topBengkel = Object.entries(s.bengkelCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxBengkel = topBengkel[0]?.[1] || 1;
   const leadtimeChartData = Object.keys(s.monthlyLt).sort((a,b)=>a-b).map(m => ({
     bulan: parseInt(m), avg: Math.round((s.monthlyLt[m].sum / s.monthlyLt[m].count) * 10) / 10
   }));
 
-  // Filter Data Tabel
   const filteredData = allData.filter(r => {
     const status = statusOf(String(r.KETERANGAN||r.KET||''));
     const q = search.toLowerCase();
@@ -114,11 +101,9 @@ export default function App() {
 
   return (
     <div className="layout">
-      {/* Modals */}
       {formOpen && <POForm editRow={formRow} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
       {detailRow && <DetailBiaya row={detailRow} onClose={() => setDetailRow(null)} />}
       
-      {/* Sidebar Komplit */}
       <nav className="sidebar">
         <div className="sidebar-logo">
           <div className="logo-badge">🔧</div>
@@ -132,9 +117,6 @@ export default function App() {
           </button>
           <button className={`nav-item ${activeNav==='kendaraan'?'active':''}`} onClick={() => setActiveNav('kendaraan')}>
             <span className="nav-icon">🚛</span> Data Kendaraan <span className="nav-badge">{s.total}</span>
-          </button>
-          <button className={`nav-item ${activeNav==='bengkel'?'active':''}`} onClick={() => setActiveNav('bengkel')}>
-            <span className="nav-icon">🏪</span> Rekap Bengkel
           </button>
 
           <div className="sidebar-section" style={{ marginTop:8 }}>Status Real-time</div>
@@ -159,14 +141,13 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <div className="main">
         <div className="topbar">
           <div className="topbar-left">
             <div className="topbar-crumb">
               <span className="crumb-root">Workshop</span>
               <span className="crumb-sep">›</span>
-              <span className="crumb-page">{activeNav === 'dashboard' ? 'Dashboard' : activeNav === 'kendaraan' ? 'Data Kendaraan' : 'Rekap Bengkel'}</span>
+              <span className="crumb-page">{activeNav === 'dashboard' ? 'Dashboard' : 'Data Kendaraan'}</span>
             </div>
           </div>
           <div className="topbar-right">
@@ -177,22 +158,21 @@ export default function App() {
 
         {loading ? <div className="spinner" style={{margin:'50px auto'}}></div> : (
           <div className="content">
+            
+            {/* LIMA KOTAK DASBOR */}
             <div className="metrics-grid">
               <SummaryCard label="Total Perbaikan" value={fmt(s.total)} sub="sepanjang 2026" icon="🔧" accent="var(--text)" iconBg="var(--surface3)" />
-              <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="masih di bengkel" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
+              <SummaryCard label="Pending" value={fmt(s.pending)} sub="menunggu alat/antrean" icon="⏳" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
+              <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="masih dibongkar" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
               <SummaryCard label="Selesai" value={fmt(s.selesai)} sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
-              <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`rata-rata ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
+              <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`avg ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--red-t)" iconBg="var(--red-dim)" />
             </div>
 
-            {/* ── CHARTS ROW ── */}
             <div className="charts-row">
               <div className="chart-card">
-                <div className="chart-card-header">
-                  <div className="chart-title">Status Perbaikan</div>
-                </div>
+                <div className="chart-card-header"><div className="chart-title">Status Perbaikan</div></div>
                 <DonutChart selesai={s.selesai||0} proses={s.proses||0} pending={s.pending||0} />
               </div>
-
               <div className="chart-card">
                 <div className="chart-card-header">
                   <div className="chart-title">Top Bengkel</div>
@@ -204,25 +184,18 @@ export default function App() {
                   ) : topBengkel.map(([name, count]) => (
                     <div key={name} className="bar-row-item">
                       <div className="bar-row-label" title={name}>{name}</div>
-                      <div className="bar-track">
-                        <div className="bar-fill" style={{ width:`${Math.round(count/maxBengkel*100)}%` }} />
-                      </div>
+                      <div className="bar-track"><div className="bar-fill" style={{ width:`${Math.round(count/maxBengkel*100)}%` }} /></div>
                       <div className="bar-count">{count}</div>
                     </div>
                   ))}
                 </div>
               </div>
-
               <div className="chart-card">
                 <div className="chart-card-header">
                   <div className="chart-title">Avg Leadtime / Bulan</div>
                   <span style={{ fontSize:11, color:'var(--text3)' }}>hari</span>
                 </div>
-                {leadtimeChartData.length > 0 ? (
-                  <LeadtimeChart data={leadtimeChartData} />
-                ) : (
-                  <div style={{ color:'var(--text3)', fontSize:12, padding:20 }}>Belum ada data tanggal keluar/masuk</div>
-                )}
+                {leadtimeChartData.length > 0 ? <LeadtimeChart data={leadtimeChartData} /> : <div style={{ color:'var(--text3)', fontSize:12, padding:20 }}>Belum ada data</div>}
               </div>
             </div>
             
