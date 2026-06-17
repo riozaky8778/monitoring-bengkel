@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { IS_DEMO, apiFetch, demoData, demoSummary } from './services/api';
+import { IS_DEMO, apiFetch, demoData } from './services/api';
 import SummaryCard from './components/SummaryCard';
 import POTable from './components/POTable';
 import POForm from './components/POForm';
@@ -11,7 +11,6 @@ import './index.css';
 const PAGE_SIZE = 15;
 
 export default function App() {
-  const [summary,  setSummary]  = useState(null);
   const [allData,  setAllData]  = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [lastSync, setLastSync] = useState(null);
@@ -30,21 +29,17 @@ export default function App() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     if (IS_DEMO) {
-      const rows = demoData();
-      setAllData(rows);
-      setSummary(demoSummary(rows));
+      setAllData(demoData().slice().reverse());
       setLastSync(new Date());
       setLoading(false);
       return;
     }
     try {
-      const [sumRes, dataRes] = await Promise.all([
-        apiFetch({ action:'getSummary' }),
-        apiFetch({ action:'getData' }),
-      ]);
-      setSummary(sumRes.summary);
-	// ✅ Reverse supaya data terbaru (baris terakhir di sheet) tampil pertama
-	setAllData((dataRes.data || []).slice().reverse());
+      // Kita HAPUS getSummary dari API, biarkan Frontend yang menghitung otomatis!
+      const dataRes = await apiFetch({ action:'getData' });
+      
+      // ✅ Menggunakan idemu: Reverse supaya data terbaru (baris terakhir di sheet) tampil pertama
+      setAllData((dataRes.data || []).slice().reverse());
       setLastSync(new Date());
     } catch(e) { console.error(e); }
     finally    { setLoading(false); }
@@ -52,39 +47,59 @@ export default function App() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Kalkulasi manual jika summary API tidak tersedia
-  const calcSummary = () => {
+  // ==========================================
+  // MESIN KALKULATOR DASBOR (100% OTOMATIS)
+  // ==========================================
+  const s = (() => {
     let selesai=0, proses=0, pending=0, totalBiaya=0;
     const bengkelCount = {};
-    const bulanCount = {};
+    const monthlyLt = {};
+    let totalLt = 0, countLt = 0;
 
     allData.forEach(r => {
-      const s = statusOf(r.KETERANGAN);
-      if (s==='SELESAI') selesai++; else if (s==='PROSES') proses++; else pending++;
-      totalBiaya += Number(r.TOTAL_BIAYA||r.BIAYA) || 0;
+      // 1. Hitung Status & Biaya
+      const stat = statusOf(r.KETERANGAN || r.KET || '');
+      if (stat === 'SELESAI') selesai++;
+      else if (stat === 'PROSES') proses++;
+      else pending++;
+      
+      totalBiaya += Number(r.TOTAL_BIAYA || r.BIAYA) || 0;
 
-      if (r.BENGKEL) bengkelCount[r.BENGKEL] = (bengkelCount[r.BENGKEL]||0)+1;
-      const m = parseInt((r.TGL_MASUK||'').split('-')[1]) || (new Date()).getMonth()+1;
-      if (!isNaN(m)) bulanCount[m] = (bulanCount[m]||0)+1;
+      // 2. Hitung Top Bengkel
+      const bengkel = (r.BENGKEL || '').trim();
+      if (bengkel) bengkelCount[bengkel] = (bengkelCount[bengkel] || 0) + 1;
+
+      // 3. Hitung Leadtime (Durasi Perbaikan)
+      let lt = parseInt(r.LEADTIME);
+      const tMasuk = new Date(r.TGL_MASUK);
+      const tKeluar = new Date(r.TGL_KELUAR);
+      
+      if (isNaN(lt) && !isNaN(tMasuk) && !isNaN(tKeluar)) {
+        lt = Math.max(0, Math.ceil((tKeluar - tMasuk) / (1000 * 60 * 60 * 24)));
+      }
+
+      if (!isNaN(lt) && lt >= 0) {
+        totalLt += lt; countLt++;
+        let bulan = !isNaN(tMasuk) ? tMasuk.getMonth() + 1 : new Date().getMonth() + 1;
+        if (!monthlyLt[bulan]) monthlyLt[bulan] = { sum: 0, count: 0 };
+        monthlyLt[bulan].sum += lt;
+        monthlyLt[bulan].count++;
+      }
     });
 
-    return summary || { total: allData.length, selesai, proses, pending, totalBiaya, avgLeadtime: 3.5, bengkelCount, bulanCount };
-  };
-  const s = calcSummary();
+    return { 
+      total: allData.length, selesai, proses, pending, totalBiaya, 
+      avgLeadtime: countLt > 0 ? (totalLt / countLt).toFixed(1) : 0, 
+      bengkelCount, monthlyLt 
+    };
+  })();
 
   // Data untuk Grafik
-  const topBengkel = Object.entries(s.bengkelCount||{}).sort(([,a],[,b])=>b-a).slice(0,5);
+  const topBengkel = Object.entries(s.bengkelCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxBengkel = topBengkel[0]?.[1] || 1;
-  const leadtimeChartData = Object.entries(s.bulanCount||{}).sort(([a],[b])=>a-b).map(([bulan]) => {
-    const bRows = allData.filter(r => {
-      const lt = parseInt(String(r.LEADTIME||''));
-      if (isNaN(lt)) return false;
-      const d = new Date(r.TGL_MASUK||'');
-      return !isNaN(d) && (d.getMonth()+1) === parseInt(bulan);
-    });
-    const avg = bRows.length ? bRows.reduce((sum,r)=>sum+(parseInt(r.LEADTIME)||0),0)/bRows.length : 0;
-    return { bulan:parseInt(bulan), avg:Math.round(avg*10)/10 };
-  });
+  const leadtimeChartData = Object.keys(s.monthlyLt).sort((a,b)=>a-b).map(m => ({
+    bulan: parseInt(m), avg: Math.round((s.monthlyLt[m].sum / s.monthlyLt[m].count) * 10) / 10
+  }));
 
   // Filter Data Tabel
   const filteredData = allData.filter(r => {
@@ -122,17 +137,17 @@ export default function App() {
             <span className="nav-icon">🏪</span> Rekap Bengkel
           </button>
 
-          <div className="sidebar-section" style={{ marginTop:8 }}>Status</div>
+          <div className="sidebar-section" style={{ marginTop:8 }}>Status Real-time</div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px' }}>
-            <span style={{ fontSize:12, color:'var(--text2)' }}>Selesai</span>
+            <span style={{ fontSize:12, color:'var(--text2)' }}>✅ Selesai</span>
             <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:999, background:'var(--green-bg)', color:'var(--green-t)' }}>{s.selesai}</span>
           </div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px' }}>
-            <span style={{ fontSize:12, color:'var(--text2)' }}>Proses</span>
+            <span style={{ fontSize:12, color:'var(--text2)' }}>🔧 Proses</span>
             <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:999, background:'var(--blue-dim)', color:'var(--blue-t)' }}>{s.proses}</span>
           </div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px' }}>
-            <span style={{ fontSize:12, color:'var(--text2)' }}>Pending</span>
+            <span style={{ fontSize:12, color:'var(--text2)' }}>⏳ Pending</span>
             <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:999, background:'var(--amber-bg)', color:'var(--amber-t)' }}>{s.pending}</span>
           </div>
         </div>
@@ -153,7 +168,6 @@ export default function App() {
               <span className="crumb-sep">›</span>
               <span className="crumb-page">{activeNav === 'dashboard' ? 'Dashboard' : activeNav === 'kendaraan' ? 'Data Kendaraan' : 'Rekap Bengkel'}</span>
             </div>
-            {IS_DEMO && <span className="badge badge-amber">⚠ Demo</span>}
           </div>
           <div className="topbar-right">
             <button className="btn" onClick={fetchData}>↺ Refresh</button>
@@ -163,16 +177,6 @@ export default function App() {
 
         {loading ? <div className="spinner" style={{margin:'50px auto'}}></div> : (
           <div className="content">
-            {IS_DEMO && (
-              <div className="setup-box">
-                <strong>⚙️ Setup diperlukan:</strong><br />
-                1. Google Sheets → <strong>Extensions → Apps Script</strong> → paste isi <code>Code.gs</code><br />
-                2. Jalankan <code>setupSheets()</code> sekali untuk membuat tab <code>PO_HEADER</code> &amp; <code>PO_DETAIL</code><br />
-                3. <strong>Deploy → New deployment → Web App</strong> → Execute as: <em>Me</em> → Who has access: <em>Anyone</em><br />
-                4. Copy URL → paste ke <code>API</code> di <code>src/services/api.js</code>, lalu refresh ✓
-              </div>
-            )}
-
             <div className="metrics-grid">
               <SummaryCard label="Total Perbaikan" value={fmt(s.total)} sub="sepanjang 2026" icon="🔧" accent="var(--text)" iconBg="var(--surface3)" />
               <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="masih di bengkel" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
@@ -196,7 +200,7 @@ export default function App() {
                 </div>
                 <div className="bar-list">
                   {topBengkel.length === 0 ? (
-                    <div style={{ color:'var(--text3)', fontSize:12 }}>Tidak ada data</div>
+                    <div style={{ color:'var(--text3)', fontSize:12, padding:20 }}>Belum ada data bengkel</div>
                   ) : topBengkel.map(([name, count]) => (
                     <div key={name} className="bar-row-item">
                       <div className="bar-row-label" title={name}>{name}</div>
@@ -214,7 +218,11 @@ export default function App() {
                   <div className="chart-title">Avg Leadtime / Bulan</div>
                   <span style={{ fontSize:11, color:'var(--text3)' }}>hari</span>
                 </div>
-                <LeadtimeChart data={leadtimeChartData} />
+                {leadtimeChartData.length > 0 ? (
+                  <LeadtimeChart data={leadtimeChartData} />
+                ) : (
+                  <div style={{ color:'var(--text3)', fontSize:12, padding:20 }}>Belum ada data tanggal keluar/masuk</div>
+                )}
               </div>
             </div>
             
