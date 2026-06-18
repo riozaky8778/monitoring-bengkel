@@ -5,7 +5,8 @@ export default function POTable({
   data, page, totalPages, setPage, 
   search, setSearch, filterStatus, setFilterStatus,
   filterDepo, setFilterDepo, depoList,
-  setDetailRow, openEditForm, openHistoryModal
+  setDetailRow, openEditForm, openHistoryModal,
+  onDeleteRow
 }) {
   return (
     <div className="table-card" style={{ marginTop: '22px' }}>
@@ -24,16 +25,12 @@ export default function POTable({
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
-
-          {/* Filter Status */}
           <select className="filter-select" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}>
             <option value="">Semua status</option>
             <option value="SELESAI">Selesai</option>
             <option value="PROSES">Proses</option>
             <option value="PENDING">Pending</option>
           </select>
-
-          {/* Filter Depo */}
           <select className="filter-select" value={filterDepo} onChange={e => { setFilterDepo(e.target.value); setPage(1); }}>
             <option value="">Semua depo</option>
             {depoList.map(depo => (
@@ -71,7 +68,6 @@ export default function POTable({
               return (
                 <tr key={r.NO_PO || i} style={{ verticalAlign: 'middle' }}>
 
-                  {/* 1. PO & Tgl Pengajuan */}
                   <td>
                     <div className="td-nopo">{r.NO_PO || '—'}</div>
                     <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: 3 }}>
@@ -79,7 +75,6 @@ export default function POTable({
                     </div>
                   </td>
 
-                  {/* 2. Nopol + KM + Jenis */}
                   <td>
                     <div className="td-nopol">{r.NOPOL}</div>
                     <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: 3 }}>
@@ -87,13 +82,11 @@ export default function POTable({
                     </div>
                   </td>
 
-                  {/* 3. Driver & Depo */}
                   <td>
                     <div style={{ fontWeight: 600, color: 'var(--text)' }}>{r.DRIVER || '—'}</div>
                     <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: 3 }}>{r.DEPO || '—'}</div>
                   </td>
 
-                  {/* 4. Bengkel & Keluhan */}
                   <td style={{ whiteSpace: 'normal', minWidth: '180px' }}>
                     <div style={{ fontWeight: 600, color: 'var(--blue-t)' }}>{r.BENGKEL}</div>
                     {r.REASON && (
@@ -103,7 +96,6 @@ export default function POTable({
                     )}
                   </td>
 
-                  {/* 5. Timeline Bengkel */}
                   <td>
                     <div style={{ fontSize: '11.5px', color: 'var(--text2)' }}>
                       <span style={{ color: 'var(--blue-t)', fontWeight: 700, marginRight: 5 }}>In:</span>{formatTgl(r.TGL_MASUK)}
@@ -113,14 +105,12 @@ export default function POTable({
                     </div>
                   </td>
 
-                  {/* 6. Status */}
                   <td>
                     <span className={`pill pill-${status.toLowerCase()}`}>
                       {status}
                     </span>
                   </td>
 
-                  {/* 7. Biaya */}
                   <td>
                     {biaya > 0 ? (
                       <button className="biaya-btn" onClick={() => setDetailRow(r)}>
@@ -131,7 +121,7 @@ export default function POTable({
                     )}
                   </td>
 
-                  {/* 8. Aksi */}
+                  {/* Aksi — Edit + Riwayat + Hapus */}
                   <td>
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                       <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">
@@ -144,6 +134,14 @@ export default function POTable({
                         style={{ color: 'var(--text3)' }}
                       >
                         🕐
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => onDeleteRow(r)}
+                        title="Hapus data"
+                        style={{ color: 'var(--red-t)' }}
+                      >
+                        🗑️
                       </button>
                     </div>
                   </td>

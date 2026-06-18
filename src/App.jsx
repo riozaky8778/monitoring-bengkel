@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { IS_DEMO, apiFetch, demoData, getKendaraan } from './services/api';
+import { IS_DEMO, apiFetch, apiPost, demoData, getKendaraan } from './services/api';
 import DataKendaraan from './components/DataKendaraan';
 import SummaryCard from './components/SummaryCard';
 import POTable from './components/POTable';
@@ -29,6 +29,9 @@ export default function App() {
   const [formOpen, setFormOpen] = useState(false);
   const [detailRow, setDetailRow] = useState(null);
   const [historyRow, setHistoryRow] = useState(null);
+  const [deleteRow, setDeleteRow] = useState(null);       // row yang mau dihapus
+  const [deleteSuccess, setDeleteSuccess] = useState(false); // tampilkan modal sukses
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -65,6 +68,23 @@ export default function App() {
   const handleNav = (nav) => {
     setActiveNav(nav);
     setSidebarOpen(false); // tutup sidebar setelah pilih menu di mobile
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteRow) return;
+    setDeleteLoading(true);
+    try {
+      if (!IS_DEMO) {
+        await apiPost({ action: 'deletePO', no_po: deleteRow.NO_PO });
+      }
+      setDeleteRow(null);
+      setDeleteSuccess(true);
+      await fetchData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const s = (() => {
@@ -139,6 +159,86 @@ export default function App() {
       {formOpen && <POForm editRow={formRow} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
       {detailRow && <DetailBiaya row={detailRow} onClose={() => setDetailRow(null)} />}
       {historyRow && <StatusHistoryModal row={historyRow} onClose={() => setHistoryRow(null)} />}
+
+      {/* Modal Konfirmasi Hapus */}
+      {deleteRow && (
+        <div className="overlay" onClick={() => !deleteLoading && setDeleteRow(null)}>
+          <div className="modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header" style={{ borderBottom: '2px solid var(--red-bg)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'var(--red-bg)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0
+                }}>✕</div>
+                <div>
+                  <div className="modal-title" style={{ color: 'var(--red-t)' }}>Hapus Data</div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>Tindakan ini tidak bisa dibatalkan</div>
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setDeleteRow(null)} disabled={deleteLoading}>×</button>
+            </div>
+            <div className="modal-body" style={{ textAlign: 'center', padding: '28px 24px' }}>
+              <div style={{ fontSize: 14, color: 'var(--text)', marginBottom: 12, lineHeight: 1.6 }}>
+                Apakah anda yakin ingin menghapus data ini?
+              </div>
+              <div style={{
+                background: 'var(--red-bg)', border: '1px solid rgba(220,38,38,0.2)',
+                borderRadius: 10, padding: '12px 16px', display: 'inline-block', textAlign: 'left'
+              }}>
+                <div style={{ fontWeight: 700, color: 'var(--red-t)', fontSize: 13 }}>
+                  PO #{deleteRow.NO_PO} — {deleteRow.NOPOL}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text2)', marginTop: 4 }}>
+                  {deleteRow.DRIVER} • {deleteRow.DEPO}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ justifyContent: 'center', gap: 12 }}>
+              <button className="btn" onClick={() => setDeleteRow(null)} disabled={deleteLoading}>
+                Batal
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleDeleteConfirm}
+                disabled={deleteLoading}
+                style={{ minWidth: 120, justifyContent: 'center', fontWeight: 700 }}
+              >
+                {deleteLoading ? '⏳ Menghapus...' : '🗑️ Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Sukses Hapus */}
+      {deleteSuccess && (
+        <div className="overlay" onClick={() => setDeleteSuccess(false)}>
+          <div className="modal" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-body" style={{ textAlign: 'center', padding: '36px 24px' }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%',
+                background: 'var(--green-bg)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontSize: 26, margin: '0 auto 16px'
+              }}>✅</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                Data Berhasil Dihapus
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--text3)', marginBottom: 24 }}>
+                Data perbaikan telah dihapus dari sistem.
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={() => setDeleteSuccess(false)}
+                style={{ minWidth: 120, justifyContent: 'center' }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Overlay gelap di belakang sidebar saat mobile */}
       {sidebarOpen && (
@@ -272,6 +372,7 @@ export default function App() {
                   openEditForm={(r) => { setFormRow(r); setFormOpen(true); }}
                   setDetailRow={setDetailRow}
                   openHistoryModal={(r) => setHistoryRow(r)}
+                  onDeleteRow={(r) => setDeleteRow(r)}
                 />
               </div>
             )}
