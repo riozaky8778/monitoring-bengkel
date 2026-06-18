@@ -18,6 +18,7 @@ export default function App() {
   const [loading,  setLoading]  = useState(true);
   const [lastSync, setLastSync] = useState(null);
   const [activeNav, setActiveNav] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false); // ← hamburger state
   
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -50,6 +51,20 @@ export default function App() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Tutup sidebar kalau layar diperbesar ke desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) setSidebarOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleNav = (nav) => {
+    setActiveNav(nav);
+    setSidebarOpen(false); // tutup sidebar setelah pilih menu di mobile
+  };
 
   const s = (() => {
     let selesai=0, proses=0, pending=0, totalBiaya=0;
@@ -97,8 +112,8 @@ export default function App() {
 
   const topBengkel = Object.entries(s.bengkelCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const depoChartData = Object.entries(s.depoCount)
-  .sort((a, b) => b[1] - a[1])
-  .map(([depo, count]) => ({ depo, count }));
+    .sort((a, b) => b[1] - a[1])
+    .map(([depo, count]) => ({ depo, count }));
   const maxBengkel = topBengkel[0]?.[1] || 1;
   const leadtimeChartData = Object.keys(s.monthlyLt).sort((a,b)=>a-b).map(m => ({
     bulan: parseInt(m), avg: Math.round((s.monthlyLt[m].sum / s.monthlyLt[m].count) * 10) / 10
@@ -119,8 +134,13 @@ export default function App() {
       {formOpen && <POForm editRow={formRow} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
       {detailRow && <DetailBiaya row={detailRow} onClose={() => setDetailRow(null)} />}
       {historyRow && <StatusHistoryModal row={historyRow} onClose={() => setHistoryRow(null)} />}
+
+      {/* Overlay gelap di belakang sidebar saat mobile */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
       
-      <nav className="sidebar">
+      <nav className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-logo">
           <div className="logo-badge">🔧</div>
           <div className="app-name">Workshop Monitor</div>
@@ -128,14 +148,21 @@ export default function App() {
         </div>
         <div className="sidebar-nav">
           <div className="sidebar-section">Menu Utama</div>
-          <button className={`nav-item ${activeNav==='dashboard'?'active':''}`} onClick={() => setActiveNav('dashboard')}>
+          <button
+            className={`nav-item ${activeNav==='dashboard' ? 'active' : ''}`}
+            onClick={() => handleNav('dashboard')}
+          >
             <span className="nav-icon">📊</span> Dashboard
           </button>
-          <button className={`nav-item ${activeNav==='kendaraan'?'active':''}`} onClick={() => setActiveNav('kendaraan')}>
-        <span className="nav-icon">🚛</span> Data Kendaraan <span className="nav-badge">{kendaraan.length}</span>
-      </button>
+          <button
+            className={`nav-item ${activeNav==='kendaraan' ? 'active' : ''}`}
+            onClick={() => handleNav('kendaraan')}
+          >
+            <span className="nav-icon">🚛</span> Data Kendaraan
+            <span className="nav-badge">{kendaraan.length}</span>
+          </button>
 
-          <div className="sidebar-section" style={{ marginTop:8 }}>Status Real-time</div>
+          <div className="sidebar-section" style={{ marginTop: 8 }}>Status Real-time</div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px' }}>
             <span style={{ fontSize:12, color:'var(--text2)' }}>✅ Selesai</span>
             <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:999, background:'var(--green-bg)', color:'var(--green-t)' }}>{s.selesai}</span>
@@ -160,6 +187,14 @@ export default function App() {
       <div className="main">
         <div className="topbar">
           <div className="topbar-left">
+            {/* Hamburger — hanya muncul di mobile */}
+            <button
+              className="hamburger-btn"
+              onClick={() => setSidebarOpen(o => !o)}
+              aria-label="Toggle menu"
+            >
+              <span /><span /><span />
+            </button>
             <div className="topbar-crumb">
               <span className="crumb-root">Workshop</span>
               <span className="crumb-sep">›</span>
@@ -180,56 +215,59 @@ export default function App() {
             )}
 
             {activeNav === 'dashboard' && (
-          <div className="content">
-            
-            {/* LIMA KOTAK DASBOR */}
-            <div className="metrics-grid">
-        <SummaryCard label="Total Perbaikan" value={fmt(s.total)} sub="" icon="🔧" accent="var(--text)" iconBg="var(--surface3)" />
-        <SummaryCard label="Pending" value={fmt(s.pending)} sub="Menunggu alat/antrean" icon="⏳" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
-        <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="Masih dibongkar" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
-        <SummaryCard label="Selesai" value={fmt(s.selesai)} sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% Dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
-        <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`Avg ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--red-t)" iconBg="var(--red-dim)" />
-      </div>
+              <div className="content">
+                
+                {/* LIMA KOTAK DASBOR */}
+                <div className="metrics-grid">
+                  <SummaryCard label="Total Perbaikan" value={fmt(s.total)} sub="" icon="🔧" accent="var(--text)" iconBg="var(--surface3)" />
+                  <SummaryCard label="Pending" value={fmt(s.pending)} sub="Menunggu alat/antrean" icon="⏳" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
+                  <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="Masih dibongkar" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
+                  <SummaryCard label="Selesai" value={fmt(s.selesai)} sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% Dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
+                  <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`Avg ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--red-t)" iconBg="var(--red-dim)" />
+                </div>
 
-            <div className="charts-row">
-              <div className="chart-card">
-        <div className="chart-card-header"><div className="chart-title">Total Perbaikan By Depo</div></div>
-        <DepoChart data={depoChartData} />
-      </div>
-              <div className="chart-card">
-                <div className="chart-card-header">
-                  <div className="chart-title">Top Bengkel</div>
-                  <span style={{ fontSize:11, color:'var(--text3)' }}>by volume</span>
-                </div>
-                <div className="bar-list">
-                  {topBengkel.length === 0 ? (
-                    <div style={{ color:'var(--text3)', fontSize:12, padding:20 }}>Belum ada data bengkel</div>
-                  ) : topBengkel.map(([name, count]) => (
-                    <div key={name} className="bar-row-item">
-                      <div className="bar-row-label" title={name}>{name}</div>
-                      <div className="bar-track"><div className="bar-fill" style={{ width:`${Math.round(count/maxBengkel*100)}%` }} /></div>
-                      <div className="bar-count">{count}</div>
+                <div className="charts-row">
+                  <div className="chart-card">
+                    <div className="chart-card-header"><div className="chart-title">Total Perbaikan By Depo</div></div>
+                    <DepoChart data={depoChartData} />
+                  </div>
+                  <div className="chart-card">
+                    <div className="chart-card-header">
+                      <div className="chart-title">Top Bengkel</div>
+                      <span style={{ fontSize:11, color:'var(--text3)' }}>by volume</span>
                     </div>
-                  ))}
+                    <div className="bar-list">
+                      {topBengkel.length === 0 ? (
+                        <div style={{ color:'var(--text3)', fontSize:12, padding:20 }}>Belum ada data bengkel</div>
+                      ) : topBengkel.map(([name, count]) => (
+                        <div key={name} className="bar-row-item">
+                          <div className="bar-row-label" title={name}>{name}</div>
+                          <div className="bar-track"><div className="bar-fill" style={{ width:`${Math.round(count/maxBengkel*100)}%` }} /></div>
+                          <div className="bar-count">{count}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="chart-card">
+                    <div className="chart-card-header">
+                      <div className="chart-title">Avg Leadtime / Bulan</div>
+                      <span style={{ fontSize:11, color:'var(--text3)' }}>hari</span>
+                    </div>
+                    {leadtimeChartData.length > 0
+                      ? <LeadtimeChart data={leadtimeChartData} />
+                      : <div style={{ color:'var(--text3)', fontSize:12, padding:20 }}>Belum ada data</div>
+                    }
+                  </div>
                 </div>
+                
+                <POTable 
+                  data={pagedData} page={page} totalPages={totalPages} setPage={setPage}
+                  search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus}
+                  openEditForm={(r) => { setFormRow(r); setFormOpen(true); }}
+                  setDetailRow={setDetailRow}
+                  openHistoryModal={(r) => setHistoryRow(r)}
+                />
               </div>
-              <div className="chart-card">
-                <div className="chart-card-header">
-                  <div className="chart-title">Avg Leadtime / Bulan</div>
-                  <span style={{ fontSize:11, color:'var(--text3)' }}>hari</span>
-                </div>
-                {leadtimeChartData.length > 0 ? <LeadtimeChart data={leadtimeChartData} /> : <div style={{ color:'var(--text3)', fontSize:12, padding:20 }}>Belum ada data</div>}
-              </div>
-            </div>
-            
-            <POTable 
-              data={pagedData} page={page} totalPages={totalPages} setPage={setPage}
-              search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus}
-              openEditForm={(r) => { setFormRow(r); setFormOpen(true); }}
-              setDetailRow={setDetailRow}
-              openHistoryModal={(r) => setHistoryRow(r)}
-            />
-          </div>
             )}
           </div>
         )}

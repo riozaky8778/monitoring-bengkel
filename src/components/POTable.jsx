@@ -4,7 +4,7 @@ import { formatTgl, statusOf, fmtRp, fmt } from '../utils/helpers';
 export default function POTable({ 
   data, page, totalPages, setPage, 
   search, setSearch, filterStatus, setFilterStatus,
-  setDetailRow, openEditForm, openHistoryModal   // ← tambah openHistoryModal
+  setDetailRow, openEditForm, openHistoryModal
 }) {
   return (
     <div className="table-card" style={{ marginTop: '22px' }}>
@@ -49,44 +49,44 @@ export default function POTable({
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ textAlign:'center', color:'var(--text3)', padding:32 }}>
+                <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text3)', padding: 32 }}>
                   Tidak ada data yang sesuai filter
                 </td>
               </tr>
             ) : data.map((r, i) => {
-              const ket    = String(r.KETERANGAN||r.KET||'');
+              const ket    = String(r.KETERANGAN || r.KET || '');
               const status = statusOf(ket);
-              const biaya  = Number(r.TOTAL_BIAYA||r.BIAYA) || 0;
+              const biaya  = Number(r.TOTAL_BIAYA || r.BIAYA) || 0;
               return (
-                <tr key={r.NO_PO || i}>
-                  
+                <tr key={r.NO_PO || i} style={{ verticalAlign: 'middle' }}>
+
                   {/* 1. PO & Tgl Pengajuan */}
                   <td>
-                    <div className="td-nopo">{r.NO_PO||'—'}</div>
-                    <div style={{ fontSize:'10.5px', color:'var(--text3)', marginTop:3 }}>
+                    <div className="td-nopo">{r.NO_PO || '—'}</div>
+                    <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: 3 }}>
                       {formatTgl(r.TGL_PENGAJUAN)}
                     </div>
                   </td>
-                  
+
                   {/* 2. Nopol + KM + Jenis */}
                   <td>
                     <div className="td-nopol">{r.NOPOL}</div>
-                    <div style={{ fontSize:'10.5px', color:'var(--text3)', marginTop:3 }}>
-                      {r.KM ? `${fmt(r.KM)} KM` : '—'} • {r.JENIS_MOBIL||r.JENIS||'—'}
+                    <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: 3 }}>
+                      {r.KM ? `${fmt(r.KM)} KM` : '—'} • {r.JENIS_MOBIL || r.JENIS || '—'}
                     </div>
                   </td>
 
                   {/* 3. Driver & Depo */}
                   <td>
-                    <div style={{ fontWeight:600, color:'var(--text)' }}>{r.DRIVER||'—'}</div>
-                    <div style={{ fontSize:'10.5px', color:'var(--text3)', marginTop:3 }}>{r.DEPO||'—'}</div>
+                    <div style={{ fontWeight: 600, color: 'var(--text)' }}>{r.DRIVER || '—'}</div>
+                    <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: 3 }}>{r.DEPO || '—'}</div>
                   </td>
 
                   {/* 4. Bengkel & Keluhan */}
                   <td style={{ whiteSpace: 'normal', minWidth: '180px' }}>
-                    <div style={{ fontWeight:600, color:'var(--blue-t)' }}>{r.BENGKEL}</div>
+                    <div style={{ fontWeight: 600, color: 'var(--blue-t)' }}>{r.BENGKEL}</div>
                     {r.REASON && (
-                      <div style={{ fontSize:'11px', color:'var(--text2)', marginTop:4, fontStyle:'italic', lineHeight:'1.4' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: 4, fontStyle: 'italic', lineHeight: '1.4' }}>
                         💬 "{r.REASON}"
                       </div>
                     )}
@@ -94,11 +94,11 @@ export default function POTable({
 
                   {/* 5. Timeline Bengkel */}
                   <td>
-                    <div style={{ fontSize:'11.5px', color:'var(--text2)' }}>
-                      <span style={{color:'var(--blue-t)', fontWeight:700, marginRight:5}}>In:</span>{formatTgl(r.TGL_MASUK)}
+                    <div style={{ fontSize: '11.5px', color: 'var(--text2)' }}>
+                      <span style={{ color: 'var(--blue-t)', fontWeight: 700, marginRight: 5 }}>In:</span>{formatTgl(r.TGL_MASUK)}
                     </div>
-                    <div style={{ fontSize:'11px', color:'var(--text3)', marginTop:3 }}>
-                      <span style={{fontWeight:600, marginRight:5}}>Out:</span>{formatTgl(r.TGL_KELUAR)}
+                    <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: 3 }}>
+                      <span style={{ fontWeight: 600, marginRight: 5 }}>Out:</span>{formatTgl(r.TGL_KELUAR)}
                     </div>
                   </td>
 
@@ -108,7 +108,7 @@ export default function POTable({
                       {status}
                     </span>
                   </td>
-                  
+
                   {/* 7. Biaya */}
                   <td>
                     {biaya > 0 ? (
@@ -116,36 +116,39 @@ export default function POTable({
                         💰 {fmtRp(biaya)}
                       </button>
                     ) : (
-                      <span style={{ color:'var(--text3)' }}>—</span>
+                      <span style={{ color: 'var(--text3)' }}>—</span>
                     )}
                   </td>
 
-                  {/* 8. Aksi */}
-                  <td style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">
-                      ✏️ Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-ghost"
-                      onClick={() => openHistoryModal(r)}
-                      title="Riwayat status"
-                      style={{ color: 'var(--text3)' }}
-                    >
-                      🕐
-                    </button>
+                  {/* 8. Aksi — flex dipindah ke div wrapper, bukan di td langsung */}
+                  <td>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">
+                        ✏️ Edit
+                      </button>
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => openHistoryModal(r)}
+                        title="Riwayat status"
+                        style={{ color: 'var(--text3)' }}
+                      >
+                        🕐
+                      </button>
+                    </div>
                   </td>
-                  
+
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
       <div className="table-footer">
         <span>Halaman {page} dari {totalPages}</span>
         <div className="pagination">
-          <button className="page-btn" onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}>‹ Prev</button>
-          <button className="page-btn" onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}>Next ›</button>
+          <button className="page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹ Prev</button>
+          <button className="page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next ›</button>
         </div>
       </div>
     </div>
