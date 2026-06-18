@@ -22,6 +22,7 @@ export default function App() {
   
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterDepo, setFilterDepo] = useState('');
   const [page, setPage] = useState(1);
 
   const [formRow, setFormRow] = useState(null);
@@ -119,10 +120,14 @@ export default function App() {
     bulan: parseInt(m), avg: Math.round((s.monthlyLt[m].sum / s.monthlyLt[m].count) * 10) / 10
   }));
 
+  // Daftar depo unik untuk dropdown filter
+  const depoList = [...new Set(allData.map(r => (r.DEPO || '').trim()).filter(Boolean))].sort();
+
   const filteredData = allData.filter(r => {
     const status = statusOf(String(r.KETERANGAN||r.KET||''));
     const q = search.toLowerCase();
     if (filterStatus && status !== filterStatus) return false;
+    if (filterDepo && (r.DEPO || '').trim() !== filterDepo) return false;
     if (q && !String(r.NOPOL||'').toLowerCase().includes(q) && !String(r.DRIVER||'').toLowerCase().includes(q)) return false;
     return true;
   });
@@ -263,6 +268,7 @@ export default function App() {
                 <POTable 
                   data={pagedData} page={page} totalPages={totalPages} setPage={setPage}
                   search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus}
+                  filterDepo={filterDepo} setFilterDepo={setFilterDepo} depoList={depoList}
                   openEditForm={(r) => { setFormRow(r); setFormOpen(true); }}
                   setDetailRow={setDetailRow}
                   openHistoryModal={(r) => setHistoryRow(r)}

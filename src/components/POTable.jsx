@@ -4,6 +4,7 @@ import { formatTgl, statusOf, fmtRp, fmt } from '../utils/helpers';
 export default function POTable({ 
   data, page, totalPages, setPage, 
   search, setSearch, filterStatus, setFilterStatus,
+  filterDepo, setFilterDepo, depoList,
   setDetailRow, openEditForm, openHistoryModal
 }) {
   return (
@@ -23,11 +24,21 @@ export default function POTable({
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
+
+          {/* Filter Status */}
           <select className="filter-select" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}>
             <option value="">Semua status</option>
             <option value="SELESAI">Selesai</option>
             <option value="PROSES">Proses</option>
             <option value="PENDING">Pending</option>
+          </select>
+
+          {/* Filter Depo */}
+          <select className="filter-select" value={filterDepo} onChange={e => { setFilterDepo(e.target.value); setPage(1); }}>
+            <option value="">Semua depo</option>
+            {depoList.map(depo => (
+              <option key={depo} value={depo}>{depo}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -120,7 +131,7 @@ export default function POTable({
                     )}
                   </td>
 
-                  {/* 8. Aksi — flex dipindah ke div wrapper, bukan di td langsung */}
+                  {/* 8. Aksi */}
                   <td>
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                       <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">
