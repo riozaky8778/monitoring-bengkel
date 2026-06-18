@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { IS_DEMO, apiFetch, demoData } from './services/api';
+import { IS_DEMO, apiFetch, demoData, getKendaraan } from './services/api';
+import DataKendaraan from './components/DataKendaraan';
 import SummaryCard from './components/SummaryCard';
 import POTable from './components/POTable';
 import POForm from './components/POForm';
 import DetailBiaya from './components/DetailBiaya';
 import StatusHistoryModal from './components/StatusHistoryModal';
-import { DonutChart, LeadtimeChart } from './components/Charts';
+import { DonutChart, LeadtimeChart, DepoChart } from './components/Charts';
 import { statusOf, fmt, fmtRp } from './utils/helpers';
 import './index.css';
 
@@ -13,6 +14,7 @@ const PAGE_SIZE = 15;
 
 export default function App() {
   const [allData,  setAllData]  = useState([]);
+  const [kendaraan, setKendaraan] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [lastSync, setLastSync] = useState(null);
   const [activeNav, setActiveNav] = useState('dashboard');
@@ -30,13 +32,18 @@ export default function App() {
     setLoading(true);
     if (IS_DEMO) {
       setAllData(demoData().slice().reverse());
+      setKendaraan((await getKendaraan()));
       setLastSync(new Date());
       setLoading(false);
       return;
     }
     try {
-      const dataRes = await apiFetch({ action:'getData' });
+      const [dataRes, kendRes] = await Promise.all([
+        apiFetch({ action: 'getData' }),
+        getKendaraan(),
+      ]);
       setAllData((dataRes.data || []).slice().reverse());
+      setKendaraan(kendRes);
       setLastSync(new Date());
     } catch(e) { console.error(e); }
     finally    { setLoading(false); }
@@ -47,6 +54,7 @@ export default function App() {
   const s = (() => {
     let selesai=0, proses=0, pending=0, totalBiaya=0;
     const bengkelCount = {};
+    const depoCount = {};                          
     const monthlyLt = {};
     let totalLt = 0, countLt = 0;
 
@@ -61,6 +69,8 @@ export default function App() {
       const bengkel = (r.BENGKEL || '').trim();
       if (bengkel) bengkelCount[bengkel] = (bengkelCount[bengkel] || 0) + 1;
 
+      const depo = (r.DEPO || 'Lainnya').trim();  
+      depoCount[depo] = (depoCount[depo] || 0) + 1; 
       let lt = parseInt(r.LEADTIME);
       const tMasuk = new Date(r.TGL_MASUK);
       const tKeluar = new Date(r.TGL_KELUAR);
@@ -81,11 +91,14 @@ export default function App() {
     return { 
       total: allData.length, selesai, proses, pending, totalBiaya, 
       avgLeadtime: countLt > 0 ? (totalLt / countLt).toFixed(1) : 0, 
-      bengkelCount, monthlyLt 
+      bengkelCount, depoCount, monthlyLt         
     };
   })();
 
   const topBengkel = Object.entries(s.bengkelCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const depoChartData = Object.entries(s.depoCount)
+  .sort((a, b) => b[1] - a[1])
+  .map(([depo, count]) => ({ depo, count }));
   const maxBengkel = topBengkel[0]?.[1] || 1;
   const leadtimeChartData = Object.keys(s.monthlyLt).sort((a,b)=>a-b).map(m => ({
     bulan: parseInt(m), avg: Math.round((s.monthlyLt[m].sum / s.monthlyLt[m].count) * 10) / 10
@@ -119,8 +132,8 @@ export default function App() {
             <span className="nav-icon">📊</span> Dashboard
           </button>
           <button className={`nav-item ${activeNav==='kendaraan'?'active':''}`} onClick={() => setActiveNav('kendaraan')}>
-            <span className="nav-icon">🚛</span> Data Kendaraan <span className="nav-badge">{s.total}</span>
-          </button>
+        <span className="nav-icon">🚛</span> Data Kendaraan <span className="nav-badge">{kendaraan.length}</span>
+      </button>
 
           <div className="sidebar-section" style={{ marginTop:8 }}>Status Real-time</div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px' }}>
@@ -160,21 +173,29 @@ export default function App() {
         </div>
 
         {loading ? <div className="spinner" style={{margin:'50px auto'}}></div> : (
+          <div className="content" style={{ padding: 0 }}>
+
+            {activeNav === 'kendaraan' && (
+              <DataKendaraan data={kendaraan} loading={loading} />
+            )}
+
+            {activeNav === 'dashboard' && (
           <div className="content">
             
+            {/* LIMA KOTAK DASBOR */}
             <div className="metrics-grid">
-              <SummaryCard label="Total Perbaikan" value={fmt(s.total)} sub="sepanjang 2026" icon="🔧" accent="var(--text)" iconBg="var(--surface3)" />
-              <SummaryCard label="Pending" value={fmt(s.pending)} sub="menunggu alat/antrean" icon="⏳" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
-              <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="masih dibongkar" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
-              <SummaryCard label="Selesai" value={fmt(s.selesai)} sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
-              <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`avg ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--red-t)" iconBg="var(--red-dim)" />
-            </div>
+        <SummaryCard label="Total Perbaikan" value={fmt(s.total)} sub="" icon="🔧" accent="var(--text)" iconBg="var(--surface3)" />
+        <SummaryCard label="Pending" value={fmt(s.pending)} sub="Menunggu alat/antrean" icon="⏳" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
+        <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="Masih dibongkar" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
+        <SummaryCard label="Selesai" value={fmt(s.selesai)} sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% Dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
+        <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`Avg ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--red-t)" iconBg="var(--red-dim)" />
+      </div>
 
             <div className="charts-row">
               <div className="chart-card">
-                <div className="chart-card-header"><div className="chart-title">Status Perbaikan</div></div>
-                <DonutChart selesai={s.selesai||0} proses={s.proses||0} pending={s.pending||0} />
-              </div>
+        <div className="chart-card-header"><div className="chart-title">Total Perbaikan By Depo</div></div>
+        <DepoChart data={depoChartData} />
+      </div>
               <div className="chart-card">
                 <div className="chart-card-header">
                   <div className="chart-title">Top Bengkel</div>
@@ -206,8 +227,10 @@ export default function App() {
               search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus}
               openEditForm={(r) => { setFormRow(r); setFormOpen(true); }}
               setDetailRow={setDetailRow}
-              openHistoryModal={(r) => setHistoryRow(r)} 
+              openHistoryModal={(r) => setHistoryRow(r)}
             />
+          </div>
+            )}
           </div>
         )}
       </div>
