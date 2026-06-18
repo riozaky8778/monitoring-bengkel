@@ -4,7 +4,7 @@ import { formatTgl, statusOf, fmtRp, fmt } from '../utils/helpers';
 export default function POTable({ 
   data, page, totalPages, setPage, 
   search, setSearch, filterStatus, setFilterStatus,
-  setDetailRow, openEditForm 
+  setDetailRow, openEditForm, openHistoryModal   // ← tambah openHistoryModal
 }) {
   return (
     <div className="table-card" style={{ marginTop: '22px' }}>
@@ -82,7 +82,7 @@ export default function POTable({
                     <div style={{ fontSize:'10.5px', color:'var(--text3)', marginTop:3 }}>{r.DEPO||'—'}</div>
                   </td>
 
-                  {/* 4. Bengkel & Keluhan (REASON) */}
+                  {/* 4. Bengkel & Keluhan */}
                   <td style={{ whiteSpace: 'normal', minWidth: '180px' }}>
                     <div style={{ fontWeight:600, color:'var(--blue-t)' }}>{r.BENGKEL}</div>
                     {r.REASON && (
@@ -103,7 +103,17 @@ export default function POTable({
                   </td>
 
                   {/* 6. Status */}
-                  <td><span className={`pill pill-${status.toLowerCase()}`}>{status}</span></td>
+                  <td>
+                    {/* ← Klik status pill untuk buka riwayat */}
+                    <span
+                      className={`pill pill-${status.toLowerCase()}`}
+                      onClick={() => openHistoryModal(r)}
+                      title="Lihat riwayat status"
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {status}
+                    </span>
+                  </td>
                   
                   {/* 7. Biaya */}
                   <td>
@@ -117,8 +127,18 @@ export default function POTable({
                   </td>
 
                   {/* 8. Aksi */}
-                  <td>
-                    <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">✏️ Edit</button>
+                  <td style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">
+                      ✏️ Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => openHistoryModal(r)}
+                      title="Riwayat status"
+                      style={{ color: 'var(--text3)' }}
+                    >
+                      🕐
+                    </button>
                   </td>
                   
                 </tr>

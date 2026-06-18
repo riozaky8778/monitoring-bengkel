@@ -5,6 +5,7 @@ import SummaryCard from './components/SummaryCard';
 import POTable from './components/POTable';
 import POForm from './components/POForm';
 import DetailBiaya from './components/DetailBiaya';
+import StatusHistoryModal from './components/StatusHistoryModal';
 import { DonutChart, LeadtimeChart, DepoChart } from './components/Charts';
 import { statusOf, fmt, fmtRp } from './utils/helpers';
 import './index.css';
@@ -25,6 +26,7 @@ export default function App() {
   const [formRow, setFormRow] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [detailRow, setDetailRow] = useState(null);
+  const [historyRow, setHistoryRow] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -116,6 +118,7 @@ export default function App() {
     <div className="layout">
       {formOpen && <POForm editRow={formRow} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
       {detailRow && <DetailBiaya row={detailRow} onClose={() => setDetailRow(null)} />}
+      {historyRow && <StatusHistoryModal row={historyRow} onClose={() => setHistoryRow(null)} />}
       
       <nav className="sidebar">
         <div className="sidebar-logo">
@@ -224,6 +227,7 @@ export default function App() {
               search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus}
               openEditForm={(r) => { setFormRow(r); setFormOpen(true); }}
               setDetailRow={setDetailRow}
+              openHistoryModal={(r) => setHistoryRow(r)}
             />
           </div>
             )}

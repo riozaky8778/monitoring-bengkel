@@ -227,14 +227,38 @@ export default function POForm({ editRow, onClose, onSaved }) {
   const save = async () => {
     if (!validate()) return;
     setSaving(true);
+ 
+    // Simpan status lama sebelum update
+    const oldStatus = isEdit ? String(editRow.KETERANGAN || '').trim() : '';
+    const newStatus = String(po.KETERANGAN || '').trim();
+ 
     try {
       if (IS_DEMO) { await new Promise(r => setTimeout(r, 600)); onSaved(); return; }
+ 
       const res = await apiPost({
         action: isEdit ? 'updatePO' : 'savePO',
         po,
         items: items.filter(i => String(i.NAMA).trim()),
       });
       if (res && res.error) { alert('❌ ' + res.error); setSaving(false); return; }
+ 
+      // ── Log ke STATUS_HISTORY jika status berubah ──────────────
+      // Kondisi log:
+      //   - PO baru (isEdit = false) → catat status awal
+      //   - Edit → hanya jika KETERANGAN berubah
+      const statusBerubah = !isEdit || oldStatus !== newStatus;
+ 
+      if (statusBerubah && newStatus) {
+        apiPost({
+          action:     'logStatusChange',
+          no_po:      po.NO_PO,
+          nopol:      po.NOPOL,
+          old_status: isEdit ? (oldStatus || '—') : '—',
+          new_status: newStatus,
+        }).catch(() => {}); // fire-and-forget, tidak blokir onSaved()
+      }
+      // ───────────────────────────────────────────────────────────
+ 
       onSaved();
     } catch (e) {
       alert('Error: ' + e.message);
