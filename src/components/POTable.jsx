@@ -51,7 +51,7 @@ export default function POTable({
               <th>Jadwal Bengkel</th>
               <th>Status</th>
               <th>Total Biaya</th>
-              <th>Aksi</th>
+              <th style={{ textAlign: 'center' }}>Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -122,8 +122,8 @@ export default function POTable({
                   </td>
 
                   {/* Aksi — Edit + Riwayat + Hapus */}
-                  <td>
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <td style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center' }}>
                       <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">
                         ✏️ Edit
                       </button>
