@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch, IS_DEMO } from '../services/api';
 
-// ── Parse tanggal dari format Apps Script: 'dd-MMM-yyyy HH:mm:ss' ──
+// ── Parse tanggal: utamakan format Apps Script 'dd-MMM-yyyy HH:mm:ss',
+//    fallback ke parser native Date() untuk format lain (mis. toString() JS,
+//    ISO string, dll) supaya data lama yang berbeda format tetap terbaca ──
 function parseDateStr(str) {
   if (!str) return null;
   const months = { Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11 };
+
+  // Coba format custom 'dd-MMM-yyyy HH:mm:ss' dulu
   try {
     const [datePart, timePart = '00:00:00'] = str.split(' ');
-    const [dd, mmm, yyyy] = datePart.split('-');
-    const [hh, mm, ss = '0'] = timePart.split(':');
-    return new Date(+yyyy, months[mmm], +dd, +hh, +mm, +ss);
-  } catch { return null; }
+    const parts = datePart.split('-');
+    if (parts.length === 3 && months[parts[1]] !== undefined) {
+      const [dd, mmm, yyyy] = parts;
+      const [hh, mm, ss = '0'] = timePart.split(':');
+      const d = new Date(+yyyy, months[mmm], +dd, +hh, +mm, +ss);
+      if (!isNaN(d.getTime())) return d;
+    }
+  } catch { /* lanjut ke fallback */ }
+
+  // Fallback: biarkan JS native yang parse (toString(), ISO, dll)
+  const fallback = new Date(str);
+  return isNaN(fallback.getTime()) ? null : fallback;
 }
 
 // ── Hitung durasi antar dua timestamp ──────────────────────────
