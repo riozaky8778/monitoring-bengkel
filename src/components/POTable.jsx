@@ -10,7 +10,7 @@ export default function POTable({
     <div className="table-card" style={{ marginTop: '22px' }}>
       <div className="table-header">
         <div className="table-title-row">
-          <div className="table-title">Data Kendaraan</div>
+          <div className="table-title">Data Perbaikan</div>
           <span className="table-count">{data.length} hasil</span>
         </div>
         <div className="filter-row">
@@ -104,13 +104,7 @@ export default function POTable({
 
                   {/* 6. Status */}
                   <td>
-                    {/* ← Klik status pill untuk buka riwayat */}
-                    <span
-                      className={`pill pill-${status.toLowerCase()}`}
-                      onClick={() => openHistoryModal(r)}
-                      title="Lihat riwayat status"
-                      style={{ cursor: 'pointer' }}
-                    >
+                    <span className={`pill pill-${status.toLowerCase()}`}>
                       {status}
                     </span>
                   </td>
