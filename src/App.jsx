@@ -405,15 +405,15 @@ export default function App() {
                       <div className="chart-title">📊 Top Aktivitas Perbaikan</div>
                       <span style={{ fontSize: 11, color: 'var(--text3)' }}>1 tahun terakhir</span>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0 8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '2px 0 6px' }}>
                       {topAktivitas.map((item, idx) => (
                         <button
                           key={item.nopol}
                           onClick={() => setTopAktivitasUnit({ NOPOL: item.nopol })}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: 12,
+                            display: 'flex', alignItems: 'center', gap: 10,
                             background: 'var(--surface2)', border: '1px solid var(--border)',
-                            borderRadius: 'var(--radius-sm)', padding: '10px 14px',
+                            borderRadius: 'var(--radius-sm)', padding: '7px 12px',
                             cursor: 'pointer', textAlign: 'left', width: '100%',
                             transition: 'background 0.15s',
                           }}
@@ -422,37 +422,31 @@ export default function App() {
                         >
                           {/* Rank */}
                           <div style={{
-                            width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontWeight: 800, fontSize: 12,
+                            fontWeight: 800, fontSize: 11,
                             background: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : 'var(--surface3)',
                             color: idx < 3 ? '#1a1a1a' : 'var(--text2)',
                           }}>
                             {idx + 1}
                           </div>
                           {/* Nopol */}
-                          <div style={{ flex: 1 }}>
-                            <div className="td-nopol" style={{ fontSize: 13 }}>{item.nopol}</div>
+                          <div style={{ flex: 1, minWidth: 90 }}>
+                            <div className="td-nopol" style={{ fontSize: 12 }}>{item.nopol}</div>
                           </div>
                           {/* Stats */}
-                          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <div style={{ textAlign: 'center' }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue-t)' }}>
-                                📄 {item.jumlah} PO
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--green-t)' }}>
-                                💰 {fmtRp(item.totalBiaya)}
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                              <div style={{ fontSize: 11, color: 'var(--text3)' }}>
-                                🕒 {formatTgl(item.lastTgl) || '—'}
-                              </div>
-                            </div>
+                          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--blue-t)', whiteSpace: 'nowrap' }}>
+                              📄 {item.jumlah} PO
+                            </span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--green-t)', whiteSpace: 'nowrap' }}>
+                              💰 {fmtRp(item.totalBiaya)}
+                            </span>
+                            <span style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
+                              🕒 {formatTgl(item.lastTgl) || '—'}
+                            </span>
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--text3)', flexShrink: 0 }}>›</div>
+                          <div style={{ fontSize: 11, color: 'var(--text3)', flexShrink: 0 }}>›</div>
                         </button>
                       ))}
                     </div>
