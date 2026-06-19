@@ -32,16 +32,51 @@ export default function POTable({
           <div className="table-title">Data Perbaikan</div>
           <span className="table-count">{data.length} hasil</span>
         </div>
-        <div className="filter-row">
-          <div className="filter-wrap">
-            <span className="filter-icon">🔍</span>
+        <div className="filter-row" style={{ flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+          {/* Filter Tanggal */}
+          <select
+            className="filter-select"
+            value={filterTglField}
+            onChange={e => { setFilterTglField(e.target.value); setPage(1); }}
+            style={{ minWidth: 120 }}
+          >
+            <option value="masuk">Tgl Masuk</option>
+            <option value="keluar">Tgl Keluar</option>
+          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>Dari</span>
             <input
-              className="filter-input"
-              placeholder="Cari nopol / driver..."
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              type="date"
+              className="filter-select"
+              style={{ width: 138, cursor: 'pointer' }}
+              value={filterTglFrom}
+              onChange={e => { setFilterTglFrom(e.target.value); setPage(1); }}
             />
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>Sampai</span>
+            <input
+              type="date"
+              className="filter-select"
+              style={{ width: 138, cursor: 'pointer' }}
+              value={filterTglTo}
+              onChange={e => { setFilterTglTo(e.target.value); setPage(1); }}
+            />
+          </div>
+          {hasFilterTgl && (
+            <button
+              className="btn btn-sm btn-ghost"
+              onClick={() => { setFilterTglFrom(''); setFilterTglTo(''); setPage(1); }}
+              style={{ color: 'var(--red-t)' }}
+            >
+              ✕ Reset
+            </button>
+          )}
+
+          {/* Divider */}
+          <div style={{ width: 1, background: 'var(--border)', alignSelf: 'stretch', margin: '0 2px' }} />
+
+          {/* Filter Status & Depo & Search */}
           <select className="filter-select" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}>
             <option value="">Semua status</option>
             <option value="SELESAI">Selesai</option>
@@ -54,48 +89,15 @@ export default function POTable({
               <option key={depo} value={depo}>{depo}</option>
             ))}
           </select>
-        </div>
-
-        {/* ── Filter Tanggal ── */}
-        <div className="filter-row" style={{ marginTop: 8, flexWrap: 'wrap', gap: 8 }}>
-          <select
-            className="filter-select"
-            value={filterTglField}
-            onChange={e => { setFilterTglField(e.target.value); setPage(1); }}
-            style={{ minWidth: 130 }}
-          >
-            <option value="masuk">Tgl Masuk</option>
-            <option value="keluar">Tgl Keluar</option>
-          </select>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>Dari</span>
+          <div className="filter-wrap">
+            <span className="filter-icon">🔍</span>
             <input
-              type="date"
               className="filter-input"
-              style={{ width: 140, paddingLeft: 10 }}
-              value={filterTglFrom}
-              onChange={e => { setFilterTglFrom(e.target.value); setPage(1); }}
+              placeholder="Cari nopol / driver..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>Sampai</span>
-            <input
-              type="date"
-              className="filter-input"
-              style={{ width: 140, paddingLeft: 10 }}
-              value={filterTglTo}
-              onChange={e => { setFilterTglTo(e.target.value); setPage(1); }}
-            />
-          </div>
-          {hasFilterTgl && (
-            <button
-              className="btn btn-sm btn-ghost"
-              onClick={() => { setFilterTglFrom(''); setFilterTglTo(''); setPage(1); }}
-              style={{ color: 'var(--red-t)' }}
-            >
-              ✕ Reset Tanggal
-            </button>
-          )}
         </div>
       </div>
 
@@ -170,7 +172,7 @@ export default function POTable({
                     {durasi !== null ? (
                       <div style={{
                         display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
-                        background: durasi > 7 ? 'var(--red-dim)' : durasi > 3 ? 'var(--amber-bg)' : 'var(--green-bg)',
+                        background: durasi > 7 ? 'var(--red-bg)'  : durasi > 3 ? 'var(--amber-bg)' : 'var(--green-bg)',
                         color:      durasi > 7 ? 'var(--red-t)'  : durasi > 3 ? 'var(--amber-t)'  : 'var(--green-t)',
                         borderRadius: 'var(--radius-sm)', padding: '3px 10px', minWidth: 46,
                       }}>
