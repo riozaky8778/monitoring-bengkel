@@ -11,11 +11,33 @@ const SUMBER_BADGE = {
 
 // ── Modal Riwayat Perbaikan ───────────────────────────────────
 function RiwayatModal({ unit, poData, onClose }) {
-  const riwayat = useMemo(() => {
+  const allRiwayat = useMemo(() => {
     return (poData || [])
       .filter(r => String(r.NOPOL || '').trim() === String(unit.NOPOL || '').trim())
       .sort((a, b) => new Date(b.TGL_MASUK) - new Date(a.TGL_MASUK));
   }, [poData, unit]);
+
+  // Daftar tahun yang tersedia dari data
+  const tahunList = useMemo(() => {
+    const years = [...new Set(allRiwayat.map(r => {
+      const d = new Date(r.TGL_MASUK);
+      return isNaN(d) ? null : d.getFullYear();
+    }).filter(Boolean))].sort((a, b) => b - a);
+    return years;
+  }, [allRiwayat]);
+
+  const currentYear = new Date().getFullYear();
+  const [filterTahun, setFilterTahun] = useState(
+    tahunList.includes(currentYear) ? currentYear : (tahunList[0] || '')
+  );
+
+  const riwayat = useMemo(() => {
+    if (!filterTahun) return allRiwayat;
+    return allRiwayat.filter(r => {
+      const d = new Date(r.TGL_MASUK);
+      return !isNaN(d) && d.getFullYear() === Number(filterTahun);
+    });
+  }, [allRiwayat, filterTahun]);
 
   const totalBiaya = riwayat.reduce((s, r) => s + (Number(r.TOTAL_BIAYA || r.BIAYA) || 0), 0);
 
@@ -36,7 +58,23 @@ function RiwayatModal({ unit, poData, onClose }) {
               {unit.DEPO} • {unit.DIVISI} {unit.DRIVER ? `• ${unit.DRIVER}` : ''}
             </div>
           </div>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Filter tahun */}
+            {tahunList.length > 0 && (
+              <select
+                className="filter-select"
+                value={filterTahun}
+                onChange={e => setFilterTahun(e.target.value)}
+                style={{ fontSize: 12, padding: '4px 8px', height: 30 }}
+              >
+                <option value="">Semua tahun</option>
+                {tahunList.map(y => (
+                  <option key={y} value={y}>📅 {y}</option>
+                ))}
+              </select>
+            )}
+            <button className="modal-close" onClick={onClose}>×</button>
+          </div>
         </div>
 
         {/* Body — scrollable */}
@@ -123,12 +161,16 @@ function RiwayatModal({ unit, poData, onClose }) {
         }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue-t)' }}>{riwayat.length}</div>
-            <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>📄 Total PO</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
+              📄 Total PO{filterTahun ? ` ${filterTahun}` : ''}
+            </div>
           </div>
           <div style={{ width: 1, background: 'var(--border)' }} />
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--green-t)' }}>{fmtRp(totalBiaya)}</div>
-            <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>💰 Total Biaya</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
+              💰 Total Biaya{filterTahun ? ` ${filterTahun}` : ''}
+            </div>
           </div>
         </div>
       </div>
