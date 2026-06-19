@@ -17,8 +17,11 @@ export default function POTable({
     const tM = new Date(tglMasuk);
     const tK = new Date(tglKeluar);
     if (isNaN(tM) || isNaN(tK)) return null;
-    const hari = Math.ceil((tK - tM) / (1000 * 60 * 60 * 24));
-    return hari >= 0 ? hari : null;
+    // Hitung selisih hari murni (abaikan jam), tanggal sama = 1 hari
+    const hariM = new Date(tM.getFullYear(), tM.getMonth(), tM.getDate());
+    const hariK = new Date(tK.getFullYear(), tK.getMonth(), tK.getDate());
+    const selisih = Math.round((hariK - hariM) / (1000 * 60 * 60 * 24));
+    return selisih >= 0 ? selisih + 1 : null;
   }
 
   const hasFilterTgl = filterTglFrom || filterTglTo;
