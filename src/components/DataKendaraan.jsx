@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatTgl, statusOf, fmtRp } from '../utils/helpers';
 
 const PAGE_SIZE = 15;
 
@@ -8,14 +9,142 @@ const SUMBER_BADGE = {
   INVENTARIS: { cls: 'badge-amber', label: 'Inventaris' },
 };
 
-export default function DataKendaraan({ data = [], loading }) {
+// ── Modal Riwayat Perbaikan ───────────────────────────────────
+function RiwayatModal({ unit, poData, onClose }) {
+  const riwayat = useMemo(() => {
+    return (poData || [])
+      .filter(r => String(r.NOPOL || '').trim() === String(unit.NOPOL || '').trim())
+      .sort((a, b) => new Date(b.TGL_MASUK) - new Date(a.TGL_MASUK));
+  }, [poData, unit]);
+
+  const totalBiaya = riwayat.reduce((s, r) => s + (Number(r.TOTAL_BIAYA || r.BIAYA) || 0), 0);
+
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div
+        className="modal"
+        style={{ maxWidth: 480, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="modal-header">
+          <div>
+            <div className="modal-title">
+              🚗 {unit.NOPOL} — {unit.MERK} {unit.TYPE}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>
+              {unit.DEPO} • {unit.DIVISI} {unit.DRIVER ? `• ${unit.DRIVER}` : ''}
+            </div>
+          </div>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        {/* Body — scrollable */}
+        <div className="modal-body" style={{ overflowY: 'auto', flex: 1, padding: '16px 20px' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginBottom: 12, letterSpacing: '0.05em' }}>
+            📋 RIWAYAT PERBAIKAN
+          </div>
+
+          {riwayat.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--text3)', padding: '32px 0', fontSize: 13 }}>
+              Belum ada riwayat perbaikan untuk unit ini
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {riwayat.map((r, i) => {
+                const status = statusOf(String(r.KETERANGAN || r.KET || ''));
+                const biaya  = Number(r.TOTAL_BIAYA || r.BIAYA) || 0;
+                return (
+                  <div key={r.NO_PO || i} style={{
+                    background: 'var(--surface2)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                    padding: '10px 14px',
+                    display: 'flex',
+                    gap: 12,
+                    alignItems: 'flex-start',
+                  }}>
+                    {/* Icon status */}
+                    <div style={{
+                      width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13,
+                      background: status === 'SELESAI' ? 'var(--green-bg)' : status === 'PROSES' ? 'var(--blue-dim)' : 'var(--amber-bg)',
+                    }}>
+                      {status === 'SELESAI' ? '✓' : status === 'PROSES' ? '⚙️' : '⏳'}
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+                            {r.BENGKEL || '—'}
+                          </div>
+                          {r.REASON && (
+                            <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2, fontStyle: 'italic' }}>
+                              "{r.REASON}"
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: 10.5, color: 'var(--text3)' }}>
+                            {formatTgl(r.TGL_MASUK) || '—'}
+                          </div>
+                          {biaya > 0 && (
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--green-t)', marginTop: 2 }}>
+                              {fmtRp(biaya)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 4 }}>
+                        PO #{r.NO_PO} •
+                        <span className={`pill pill-${status.toLowerCase()}`} style={{ marginLeft: 6, fontSize: 9, padding: '1px 6px' }}>
+                          {status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer — summary */}
+        <div style={{
+          borderTop: '1px solid var(--border)',
+          padding: '14px 20px',
+          display: 'flex',
+          gap: 16,
+          justifyContent: 'space-between',
+          background: 'var(--surface2)',
+          borderRadius: '0 0 var(--radius) var(--radius)',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue-t)' }}>{riwayat.length}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>📄 Total PO</div>
+          </div>
+          <div style={{ width: 1, background: 'var(--border)' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--green-t)' }}>{fmtRp(totalBiaya)}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>💰 Total Biaya</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Komponen Utama ────────────────────────────────────────────
+export default function DataKendaraan({ data = [], loading, poData = [] }) {
   const [search,    setSearch]    = useState('');
   const [fArmada,   setFArmada]   = useState('');
   const [fDivisi,   setFDivisi]   = useState('');
   const [fSumber,   setFSumber]   = useState('');
   const [page,      setPage]      = useState(1);
+  const [detailUnit, setDetailUnit] = useState(null); // ← state modal
 
-  // Opsi dinamis dari data
   const armadaOpts = useMemo(() => [...new Set(data.map(r => r.JENIS_ARMADA).filter(Boolean))].sort(), [data]);
   const divisiOpts = useMemo(() => [...new Set(data.map(r => r.DIVISI).filter(Boolean))].sort(), [data]);
 
@@ -55,7 +184,6 @@ export default function DataKendaraan({ data = [], loading }) {
     a.click();
   }
 
-  // Stat pill mini
   const StatPill = ({ label, value, accent }) => (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
@@ -69,6 +197,15 @@ export default function DataKendaraan({ data = [], loading }) {
 
   return (
     <div className="content">
+
+      {/* Modal riwayat */}
+      {detailUnit && (
+        <RiwayatModal
+          unit={detailUnit}
+          poData={poData}
+          onClose={() => setDetailUnit(null)}
+        />
+      )}
 
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
@@ -94,7 +231,6 @@ export default function DataKendaraan({ data = [], loading }) {
             <span className="table-count">{filtered.length} unit</span>
           </div>
           <div className="filter-row">
-            {/* Search */}
             <div className="filter-wrap">
               <span className="filter-icon">🔍</span>
               <input
@@ -104,33 +240,23 @@ export default function DataKendaraan({ data = [], loading }) {
                 onChange={e => { setSearch(e.target.value); setPage(1); }}
               />
             </div>
-
-            {/* Jenis Armada */}
             <select className="filter-select" value={fArmada} onChange={e => { setFArmada(e.target.value); setPage(1); }}>
               <option value="">Semua Jenis Armada</option>
               {armadaOpts.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
-
-            {/* Divisi / Brand */}
             <select className="filter-select" value={fDivisi} onChange={e => { setFDivisi(e.target.value); setPage(1); }}>
               <option value="">Semua Divisi / Brand</option>
               {divisiOpts.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
-
-            {/* Sumber */}
             <select className="filter-select" value={fSumber} onChange={e => { setFSumber(e.target.value); setPage(1); }}>
               <option value="">Semua Sumber</option>
               <option value="SECONDARY">Secondary</option>
               <option value="PRIMARY">Primary</option>
               <option value="INVENTARIS">Inventaris</option>
             </select>
-
-            {/* Reset */}
             {(search || fArmada || fDivisi || fSumber) && (
               <button className="btn btn-sm btn-ghost" onClick={reset}>✕ Reset</button>
             )}
-
-            {/* Export */}
             <button className="btn btn-sm" onClick={exportXls} title="Export ke Excel">
               ⬇ Excel
             </button>
@@ -155,19 +281,23 @@ export default function DataKendaraan({ data = [], loading }) {
                   <th>Driver</th>
                   <th>Tahun</th>
                   <th>Sumber</th>
+                  <th style={{ textAlign: 'center' }}>Detail</th>
                 </tr>
               </thead>
               <tbody>
                 {paged.length === 0 ? (
                   <tr>
-                    <td colSpan={9} style={{ textAlign: 'center', color: 'var(--text3)', padding: 40 }}>
+                    <td colSpan={10} style={{ textAlign: 'center', color: 'var(--text3)', padding: 40 }}>
                       Tidak ada unit yang sesuai filter
                     </td>
                   </tr>
                 ) : paged.map((r, i) => {
                   const sb = SUMBER_BADGE[r.SUMBER] || { cls: '', label: r.SUMBER };
+                  const jumlahPO = (poData || []).filter(p =>
+                    String(p.NOPOL || '').trim() === String(r.NOPOL || '').trim()
+                  ).length;
                   return (
-                    <tr key={r.NOPOL + i}>
+                    <tr key={r.NOPOL + i} style={{ verticalAlign: 'middle' }}>
                       <td style={{ color: 'var(--text3)', fontSize: 11 }}>
                         {(page - 1) * PAGE_SIZE + i + 1}
                       </td>
@@ -184,6 +314,24 @@ export default function DataKendaraan({ data = [], loading }) {
                       <td style={{ color: 'var(--text2)' }}>{r.TAHUN || '—'}</td>
                       <td>
                         <span className={`badge ${sb.cls}`}>{sb.label}</span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          onClick={() => setDetailUnit(r)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        >
+                          👁️ Detail
+                          {jumlahPO > 0 && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 700, padding: '1px 5px',
+                              borderRadius: 999, background: 'var(--blue-dim)',
+                              color: 'var(--blue-t)', marginLeft: 2,
+                            }}>
+                              {jumlahPO}
+                            </span>
+                          )}
+                        </button>
                       </td>
                     </tr>
                   );

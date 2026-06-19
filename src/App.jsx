@@ -316,7 +316,7 @@ export default function App() {
           <div className="content" style={{ padding: 0 }}>
 
             {activeNav === 'kendaraan' && (
-              <DataKendaraan data={kendaraan} loading={loading} />
+              <DataKendaraan data={kendaraan} loading={loading} poData={allData} />
             )}
 
             {activeNav === 'dashboard' && (
