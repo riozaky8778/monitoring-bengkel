@@ -31,6 +31,9 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDepo, setFilterDepo] = useState('');
+  const [filterTglField, setFilterTglField] = useState('masuk'); // 'masuk' | 'keluar'
+  const [filterTglFrom,  setFilterTglFrom]  = useState('');
+  const [filterTglTo,    setFilterTglTo]    = useState('');
   const [page, setPage] = useState(1);
 
   const [formRow, setFormRow] = useState(null);
@@ -181,6 +184,16 @@ export default function App() {
     if (filterStatus && status !== filterStatus) return false;
     if (filterDepo && (r.DEPO || '').trim() !== filterDepo) return false;
     if (q && !String(r.NOPOL||'').toLowerCase().includes(q) && !String(r.DRIVER||'').toLowerCase().includes(q)) return false;
+
+    // Filter tanggal
+    if (filterTglFrom || filterTglTo) {
+      const tglVal = filterTglField === 'masuk' ? r.TGL_MASUK : r.TGL_KELUAR;
+      const tgl = new Date(tglVal);
+      if (isNaN(tgl)) return false;
+      if (filterTglFrom && tgl < new Date(filterTglFrom)) return false;
+      if (filterTglTo   && tgl > new Date(filterTglTo + 'T23:59:59')) return false;
+    }
+
     return true;
   });
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
@@ -434,6 +447,9 @@ export default function App() {
                   search={search} setSearch={setSearch}
                   filterStatus={filterStatus} setFilterStatus={setFilterStatus}
                   filterDepo={filterDepo} setFilterDepo={setFilterDepo} depoList={depoList}
+                  filterTglField={filterTglField} setFilterTglField={setFilterTglField}
+                  filterTglFrom={filterTglFrom}   setFilterTglFrom={setFilterTglFrom}
+                  filterTglTo={filterTglTo}       setFilterTglTo={setFilterTglTo}
                   openEditForm={(r) => { setFormRow(r); setFormOpen(true); }}
                   setDetailRow={setDetailRow}
                   openHistoryModal={(r) => setHistoryRow(r)}
