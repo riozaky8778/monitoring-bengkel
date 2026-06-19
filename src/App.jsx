@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { IS_DEMO, apiFetch, apiPost, demoData, getKendaraan } from './services/api';
 import DataKendaraan from './components/DataKendaraan';
 import SummaryCard from './components/SummaryCard';
@@ -7,7 +7,8 @@ import POForm from './components/POForm';
 import DetailBiaya from './components/DetailBiaya';
 import StatusHistoryModal from './components/StatusHistoryModal';
 import { DonutChart, LeadtimeChart, DepoChart } from './components/Charts';
-import { statusOf, fmt, fmtRp } from './utils/helpers';
+import RiwayatModal from './components/RiwayatModal';
+import { statusOf, fmt, fmtRp, formatTgl } from './utils/helpers';
 import './index.css';
 
 const PAGE_SIZE = 15;
@@ -32,6 +33,7 @@ export default function App() {
   const [deleteRow, setDeleteRow] = useState(null);       // row yang mau dihapus
   const [deleteSuccess, setDeleteSuccess] = useState(false); // tampilkan modal sukses
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [topAktivitasUnit, setTopAktivitasUnit] = useState(null); // ← modal top aktivitas
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -132,6 +134,28 @@ export default function App() {
   })();
 
   const topBengkel = Object.entries(s.bengkelCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // Top 5 kendaraan paling aktif 1 tahun terakhir
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  const topAktivitas = useMemo(() => {
+    const map = {};
+    allData.forEach(r => {
+      const tgl = new Date(r.TGL_MASUK);
+      if (isNaN(tgl) || tgl < oneYearAgo) return;
+      const nopol = String(r.NOPOL || '').trim();
+      if (!nopol) return;
+      if (!map[nopol]) map[nopol] = { nopol, jumlah: 0, totalBiaya: 0, lastTgl: null };
+      map[nopol].jumlah++;
+      map[nopol].totalBiaya += Number(r.TOTAL_BIAYA || r.BIAYA) || 0;
+      if (!map[nopol].lastTgl || tgl > new Date(map[nopol].lastTgl)) {
+        map[nopol].lastTgl = r.TGL_MASUK;
+      }
+    });
+    return Object.values(map)
+      .sort((a, b) => b.jumlah - a.jumlah || b.totalBiaya - a.totalBiaya)
+      .slice(0, 5);
+  }, [allData]);
   const depoChartData = Object.entries(s.depoCount)
     .sort((a, b) => b[1] - a[1])
     .map(([depo, count]) => ({ depo, count }));
@@ -240,6 +264,15 @@ export default function App() {
         </div>
       )}
 
+      {/* Modal Riwayat dari Top Aktivitas */}
+      {topAktivitasUnit && (
+        <RiwayatModal
+          unit={topAktivitasUnit}
+          poData={allData}
+          onClose={() => setTopAktivitasUnit(null)}
+        />
+      )}
+
       {/* Overlay gelap di belakang sidebar saat mobile */}
       {sidebarOpen && (
         <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
@@ -328,7 +361,7 @@ export default function App() {
                   <SummaryCard label="Pending" value={fmt(s.pending)} sub="Menunggu alat/antrean" icon="⏳" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
                   <SummaryCard label="Sedang Proses" value={fmt(s.proses)} sub="Masih dibongkar" icon="⚙️" accent="var(--blue-t)" iconBg="var(--blue-dim)" />
                   <SummaryCard label="Selesai" value={fmt(s.selesai)} sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% Dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
-                  <SummaryCard label="Total Biaya Perbaikan" value={fmtRp(s.totalBiaya)} sub="" icon="💰" accent="var(--red-t)" iconBg="var(--red-dim)" />
+                  <SummaryCard label="Total Biaya" value={fmtRp(s.totalBiaya)} sub={`Avg ${s.avgLeadtime} hr leadtime`} icon="💰" accent="var(--red-t)" iconBg="var(--red-dim)" />
                 </div>
 
                 <div className="charts-row">
@@ -365,6 +398,67 @@ export default function App() {
                   </div>
                 </div>
                 
+                {/* TOP AKTIVITAS PERBAIKAN */}
+                {topAktivitas.length > 0 && (
+                  <div className="chart-card" style={{ marginTop: 0 }}>
+                    <div className="chart-card-header">
+                      <div className="chart-title">📊 Top Aktivitas Perbaikan</div>
+                      <span style={{ fontSize: 11, color: 'var(--text3)' }}>1 tahun terakhir</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '4px 0 8px' }}>
+                      {topAktivitas.map((item, idx) => (
+                        <button
+                          key={item.nopol}
+                          onClick={() => setTopAktivitasUnit({ NOPOL: item.nopol })}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            background: 'var(--surface2)', border: '1px solid var(--border)',
+                            borderRadius: 'var(--radius-sm)', padding: '10px 14px',
+                            cursor: 'pointer', textAlign: 'left', width: '100%',
+                            transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--surface3)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'var(--surface2)'}
+                        >
+                          {/* Rank */}
+                          <div style={{
+                            width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontWeight: 800, fontSize: 12,
+                            background: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : 'var(--surface3)',
+                            color: idx < 3 ? '#1a1a1a' : 'var(--text2)',
+                          }}>
+                            {idx + 1}
+                          </div>
+                          {/* Nopol */}
+                          <div style={{ flex: 1 }}>
+                            <div className="td-nopol" style={{ fontSize: 13 }}>{item.nopol}</div>
+                          </div>
+                          {/* Stats */}
+                          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue-t)' }}>
+                                📄 {item.jumlah} PO
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--green-t)' }}>
+                                💰 {fmtRp(item.totalBiaya)}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+                                🕒 {formatTgl(item.lastTgl) || '—'}
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text3)', flexShrink: 0 }}>›</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <POTable 
                   data={pagedData} page={page} totalPages={totalPages} setPage={setPage}
                   search={search} setSearch={setSearch} filterStatus={filterStatus} setFilterStatus={setFilterStatus}
