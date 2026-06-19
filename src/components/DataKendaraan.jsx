@@ -3,6 +3,8 @@ import { formatTgl, statusOf, fmtRp } from '../utils/helpers';
 import RiwayatModal from './RiwayatModal';
 
 
+const PAGE_SIZE = 15;
+
 const SUMBER_BADGE = {
   SECONDARY:  { cls: 'badge-blue',  label: 'Secondary'  },
   PRIMARY:    { cls: 'badge-green', label: 'Primary'    },
