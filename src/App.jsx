@@ -206,7 +206,7 @@ export default function App() {
     <div className="layout">
 
       {/* ── Modals ── */}
-      {formOpen    && <POForm editRow={formRow} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
+      {formOpen    && <POForm editRow={formRow} existingNoPo={allData.map(r => String(r.NO_PO).trim())} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
       {detailRow   && <DetailBiaya row={detailRow} onClose={() => setDetailRow(null)} />}
       {historyRow  && <StatusHistoryModal row={historyRow} onClose={() => setHistoryRow(null)} />}
 

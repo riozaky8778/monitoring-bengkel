@@ -112,7 +112,7 @@ function NopolSearch({ value, onChange, kendaraanList, disabled }) {
 }
 
 // ── POForm utama ──────────────────────────────────────────────
-export default function POForm({ editRow, onClose, onSaved }) {
+export default function POForm({ editRow, onClose, onSaved, existingNoPo = [] }) {
   const isEdit = !!editRow;
 
   const [po, setPo] = useState(isEdit ? {
@@ -128,6 +128,10 @@ export default function POForm({ editRow, onClose, onSaved }) {
   const [saving,       setSaving]       = useState(false);
   const [errors,       setErrors]       = useState({});
   const [autoFilled,   setAutoFilled]   = useState({ DRIVER: false, DEPO: false, JENIS_MOBIL: false });
+
+// ← TAMBAHKAN INI
+const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
+  existingNoPo.includes(po.NO_PO.trim());
 
   // master kendaraan
   const [kendaraanList,    setKendaraanList]    = useState([]);
@@ -214,14 +218,15 @@ export default function POForm({ editRow, onClose, onSaved }) {
 
   // ── validasi ─────────────────────────────────────────────────
   const validate = () => {
-    const errs = {};
-    if (!String(po.NO_PO      || '').trim()) errs.NO_PO      = 'Wajib diisi';
-    if (!String(po.NOPOL      || '').trim()) errs.NOPOL      = 'Wajib diisi';
-    if (!String(po.BENGKEL    || '').trim()) errs.BENGKEL    = 'Wajib diisi';
-    if (!String(po.KETERANGAN || '').trim()) errs.KETERANGAN = 'Wajib diisi';
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
+  const errs = {};
+  if (!String(po.NO_PO      || '').trim()) errs.NO_PO      = 'Wajib diisi';
+  else if (isDuplicateNoPo)                errs.NO_PO      = 'NO PO sudah pernah diinput';
+  if (!String(po.NOPOL      || '').trim()) errs.NOPOL      = 'Wajib diisi';
+  if (!String(po.BENGKEL    || '').trim()) errs.BENGKEL    = 'Wajib diisi';
+  if (!String(po.KETERANGAN || '').trim()) errs.KETERANGAN = 'Wajib diisi';
+  setErrors(errs);
+  return Object.keys(errs).length === 0;
+};
 
   // ── save ──────────────────────────────────────────────────────
   const save = async () => {
@@ -281,7 +286,20 @@ export default function POForm({ editRow, onClose, onSaved }) {
           <div className="form-section-label">🚛 Data Kendaraan</div>
           <div className="form-grid">
 
-            {field('NO_PO', 'No PO', { required: true })}
+            <div className="form-group">
+              <label className="form-label">No PO<span className="form-required"> *</span></label>
+              <input
+                type="text"
+                className={`form-input${(errors.NO_PO || isDuplicateNoPo) ? ' error' : ''}`}
+                value={po.NO_PO || ''}
+                onChange={e => { setPo(p => ({ ...p, NO_PO: e.target.value })); setErrors(er => ({ ...er, NO_PO: '' })); }}
+                disabled={isEdit}
+              />
+              {errors.NO_PO && <div className="form-err">{errors.NO_PO}</div>}
+              {isDuplicateNoPo && (
+                <div className="form-err">⚠️ NO PO ini sudah pernah diinput, gunakan nomor lain</div>
+              )}
+            </div>
 
             {/* Nopol — searchable dropdown */}
             <div className="form-group">
@@ -425,7 +443,7 @@ export default function POForm({ editRow, onClose, onSaved }) {
 
         <div className="modal-footer">
           <button className="btn" onClick={onClose}>Batal</button>
-          <button className="btn btn-primary" onClick={save} disabled={saving}>
+          <button className="btn btn-primary" onClick={save} disabled={saving || isDuplicateNoPo}>
             {saving ? '⏳ Menyimpan…' : isEdit ? '💾 Simpan Perubahan' : '💾 Simpan PO'}
           </button>
         </div>
