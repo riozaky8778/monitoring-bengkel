@@ -9,6 +9,16 @@ const EMPTY_PO   = () => ({
   TGL_MASUK: '', TGL_KELUAR: '', KETERANGAN: '',
 });
 
+// helper: uppercase semua field text sebelum dikirim ke backend
+function toUpperPO(po) {
+  const upperKeys = ['NOPOL','DRIVER','DEPO','DIVISI','JENIS_MOBIL','REASON','BENGKEL','KETERANGAN'];
+  const out = { ...po };
+  upperKeys.forEach(k => {
+    if (typeof out[k] === 'string') out[k] = out[k].toUpperCase();
+  });
+  return out;
+}
+
 // ── Searchable Nopol Dropdown ─────────────────────────────────
 function NopolSearch({ value, onChange, kendaraanList, disabled }) {
   const [query,    setQuery]    = useState(value || '');
@@ -16,10 +26,8 @@ function NopolSearch({ value, onChange, kendaraanList, disabled }) {
   const [focused,  setFocused]  = useState(false);
   const wrapRef = useRef(null);
 
-  // sync jika value berubah dari luar (edit mode)
   useEffect(() => { setQuery(value || ''); }, [value]);
 
-  // klik di luar → tutup
   useEffect(() => {
     const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
     document.addEventListener('mousedown', handler);
@@ -36,7 +44,7 @@ function NopolSearch({ value, onChange, kendaraanList, disabled }) {
   const select = (k) => {
     setQuery(k.NOPOL);
     setOpen(false);
-    onChange(k); // kirim seluruh objek kendaraan ke parent
+    onChange(k);
   };
 
   const sumberColor = (s) => {
@@ -58,7 +66,6 @@ function NopolSearch({ value, onChange, kendaraanList, disabled }) {
         onBlur={() => setFocused(false)}
         autoComplete="off"
       />
-      {/* indikator loading / count */}
       <div style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', fontSize:10, color:'var(--text3)', pointerEvents:'none' }}>
         {query.trim() ? `${filtered.length} hasil` : `${kendaraanList.length} unit`}
       </div>
@@ -85,7 +92,6 @@ function NopolSearch({ value, onChange, kendaraanList, disabled }) {
                 onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                {/* kiri: plat + type */}
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--blue)', letterSpacing: '0.2px' }}>{k.NOPOL}</div>
                   <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
@@ -93,7 +99,6 @@ function NopolSearch({ value, onChange, kendaraanList, disabled }) {
                     {k.DRIVER && <span style={{ marginLeft: 6, color: 'var(--text2)' }}>· {k.DRIVER}</span>}
                   </div>
                 </div>
-                {/* kanan: depo + sumber */}
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   {k.DEPO && <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)' }}>{k.DEPO}</div>}
                   <span style={{
@@ -129,13 +134,17 @@ export default function POForm({ editRow, onClose, onSaved, existingNoPo = [] })
   const [errors,       setErrors]       = useState({});
   const [autoFilled,   setAutoFilled]   = useState({ DRIVER: false, DEPO: false, JENIS_MOBIL: false });
 
-// ← TAMBAHKAN INI
-const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
-  existingNoPo.includes(po.NO_PO.trim());
+  const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
+    existingNoPo.includes(po.NO_PO.trim());
 
   // master kendaraan
   const [kendaraanList,    setKendaraanList]    = useState([]);
   const [loadingKendaraan, setLoadingKendaraan] = useState(true);
+
+  // master bengkel ── BARU
+  const [bengkelList,      setBengkelList]      = useState([]);
+  const [loadingBengkel,   setLoadingBengkel]   = useState(true);
+  const [bengkelManual,    setBengkelManual]    = useState(false); // true jika user pilih "LAINNYA"
 
   // fetch master kendaraan sekali saat mount
   useEffect(() => {
@@ -149,6 +158,29 @@ const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
       .catch(() => setKendaraanList([]))
       .finally(() => setLoadingKendaraan(false));
   }, []);
+
+  // fetch master bengkel sekali saat mount ── BARU
+  useEffect(() => {
+    if (IS_DEMO) {
+      setBengkelList([
+        { ID:'BKL01', NAMA:'WORKSHOP TSMK', LOKASI:'PEKANBARU' },
+        { ID:'BKL02', NAMA:'MEGA RIAU SERVICE', LOKASI:'PEKANBARU' },
+      ]);
+      setLoadingBengkel(false);
+      return;
+    }
+    apiFetch({ action: 'getBengkel' })
+      .then(d => setBengkelList(d.data || []))
+      .catch(() => setBengkelList([]))
+      .finally(() => setLoadingBengkel(false));
+  }, []);
+
+  // saat edit: jika BENGKEL existing tidak ada di list master → mode manual
+  useEffect(() => {
+    if (!isEdit || loadingBengkel) return;
+    const exists = bengkelList.some(b => b.NAMA === String(editRow.BENGKEL || '').toUpperCase());
+    if (!exists && editRow.BENGKEL) setBengkelManual(true);
+  }, [isEdit, loadingBengkel, bengkelList, editRow]);
 
   // fetch detail items saat edit
   useEffect(() => {
@@ -174,7 +206,6 @@ const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
       DEPO:        kendaraan.DEPO   || '',
       DIVISI:      kendaraan.DIVISI || p.DIVISI,
     }));
-    // tandai field mana yang benar-benar dari master
     setAutoFilled({
       DRIVER:      !!kendaraan.DRIVER,
       DEPO:        !!kendaraan.DEPO,
@@ -184,9 +215,21 @@ const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
   }, []);
 
   const handleNopolChange = useCallback((kendaraan) => {
-    // dipanggil juga saat onChange tanpa select (ketik manual)
     handleNopolSelect(kendaraan);
   }, [handleNopolSelect]);
+
+  // ── handler dropdown bengkel ── BARU
+  const handleBengkelSelect = (e) => {
+    const val = e.target.value;
+    if (val === '__LAINNYA__') {
+      setBengkelManual(true);
+      setPo(p => ({ ...p, BENGKEL: '' }));
+    } else {
+      setBengkelManual(false);
+      setPo(p => ({ ...p, BENGKEL: val }));
+    }
+    setErrors(er => ({ ...er, BENGKEL: '' }));
+  };
 
   // ── item helpers ─────────────────────────────────────────────
   const addItem    = () => setItems(it => [...it, EMPTY_ITEM()]);
@@ -218,52 +261,49 @@ const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
 
   // ── validasi ─────────────────────────────────────────────────
   const validate = () => {
-  const errs = {};
-  if (!String(po.NO_PO      || '').trim()) errs.NO_PO      = 'Wajib diisi';
-  else if (isDuplicateNoPo)                errs.NO_PO      = 'NO PO sudah pernah diinput';
-  if (!String(po.NOPOL      || '').trim()) errs.NOPOL      = 'Wajib diisi';
-  if (!String(po.BENGKEL    || '').trim()) errs.BENGKEL    = 'Wajib diisi';
-  if (!String(po.KETERANGAN || '').trim()) errs.KETERANGAN = 'Wajib diisi';
-  setErrors(errs);
-  return Object.keys(errs).length === 0;
-};
+    const errs = {};
+    if (!String(po.NO_PO      || '').trim()) errs.NO_PO      = 'Wajib diisi';
+    else if (isDuplicateNoPo)                errs.NO_PO      = 'NO PO sudah pernah diinput';
+    if (!String(po.NOPOL      || '').trim()) errs.NOPOL      = 'Wajib diisi';
+    if (!String(po.BENGKEL    || '').trim()) errs.BENGKEL    = 'Wajib diisi';
+    if (!String(po.KETERANGAN || '').trim()) errs.KETERANGAN = 'Wajib diisi';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   // ── save ──────────────────────────────────────────────────────
   const save = async () => {
     if (!validate()) return;
     setSaving(true);
- 
-    // Simpan status lama sebelum update
+
     const oldStatus = isEdit ? String(editRow.KETERANGAN || '').trim() : '';
-    const newStatus = String(po.KETERANGAN || '').trim();
- 
+    const newStatus = String(po.KETERANGAN || '').trim().toUpperCase();
+
+    // ── uppercase semua field text sebelum dikirim ── BARU
+    const poToSave = toUpperPO(po);
+
     try {
       if (IS_DEMO) { await new Promise(r => setTimeout(r, 600)); onSaved(); return; }
- 
+
       const res = await apiPost({
         action: isEdit ? 'updatePO' : 'savePO',
-        po,
-        items: items.filter(i => String(i.NAMA).trim()),
+        po: poToSave,
+        items: items.filter(i => String(i.NAMA).trim()).map(i => ({ ...i, NAMA: String(i.NAMA).toUpperCase() })),
       });
       if (res && res.error) { alert('❌ ' + res.error); setSaving(false); return; }
- 
-      // ── Log ke STATUS_HISTORY jika status berubah ──────────────
-      // Kondisi log:
-      //   - PO baru (isEdit = false) → catat status awal
-      //   - Edit → hanya jika KETERANGAN berubah
-      const statusBerubah = !isEdit || oldStatus !== newStatus;
- 
+
+      const statusBerubah = !isEdit || oldStatus.toUpperCase() !== newStatus;
+
       if (statusBerubah && newStatus) {
         apiPost({
           action:     'logStatusChange',
-          no_po:      po.NO_PO,
-          nopol:      po.NOPOL,
+          no_po:      poToSave.NO_PO,
+          nopol:      poToSave.NOPOL,
           old_status: isEdit ? (oldStatus || '—') : '—',
           new_status: newStatus,
-        }).catch(() => {}); // fire-and-forget, tidak blokir onSaved()
+        }).catch(() => {});
       }
-      // ───────────────────────────────────────────────────────────
- 
+
       onSaved();
     } catch (e) {
       alert('Error: ' + e.message);
@@ -301,13 +341,11 @@ const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
               )}
             </div>
 
-            {/* Nopol — searchable dropdown */}
             <div className="form-group">
               <label className="form-label">
                 Nopol<span className="form-required"> *</span>
               </label>
               {isEdit ? (
-                // edit mode: nopol tidak bisa diganti
                 <input className="form-input" value={po.NOPOL} disabled
                   style={{ background: 'var(--surface3)', color: 'var(--text2)' }} />
               ) : (
@@ -322,7 +360,6 @@ const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
               {loadingKendaraan && <div style={{ fontSize:10, color:'var(--text3)', marginTop:3 }}>Memuat data kendaraan…</div>}
             </div>
 
-            {/* Auto-filled fields — tampil read-only dengan indikator */}
             <div className="form-group">
               <label className="form-label">
                 Driver
@@ -373,7 +410,48 @@ const isDuplicateNoPo = !isEdit && po.NO_PO.trim() !== '' &&
           {/* ── Data Bengkel ── */}
           <div className="form-section-label">🏪 Data Bengkel</div>
           <div className="form-grid">
-            {field('BENGKEL', 'Bengkel', { required: true })}
+
+            {/* ── Dropdown Bengkel ── BARU */}
+            <div className="form-group">
+              <label className="form-label">Bengkel<span className="form-required"> *</span></label>
+
+              {!bengkelManual ? (
+                <select
+                  className={`form-input${errors.BENGKEL ? ' error' : ''}`}
+                  value={po.BENGKEL || ''}
+                  onChange={handleBengkelSelect}
+                  disabled={loadingBengkel}
+                >
+                  <option value="">-- Pilih Bengkel --</option>
+                  {bengkelList.map(b => (
+                    <option key={b.ID || b.NAMA} value={b.NAMA}>
+                      {b.NAMA}{b.LOKASI ? ` — ${b.LOKASI}` : ''}
+                    </option>
+                  ))}
+                  <option value="__LAINNYA__">✏️ LAINNYA (isi manual)</option>
+                </select>
+              ) : (
+                <div>
+                  <input
+                    type="text"
+                    className={`form-input${errors.BENGKEL ? ' error' : ''}`}
+                    value={po.BENGKEL || ''}
+                    onChange={e => { setPo(p => ({ ...p, BENGKEL: e.target.value })); setErrors(er => ({ ...er, BENGKEL: '' })); }}
+                    placeholder="Ketik nama bengkel..."
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setBengkelManual(false); setPo(p => ({ ...p, BENGKEL: '' })); }}
+                    style={{ fontSize:11, color:'var(--blue-t)', background:'none', border:'none', cursor:'pointer', marginTop:4, padding:0 }}
+                  >
+                    ← Kembali pilih dari daftar
+                  </button>
+                </div>
+              )}
+              {errors.BENGKEL && <div className="form-err">{errors.BENGKEL}</div>}
+              {loadingBengkel && <div style={{ fontSize:10, color:'var(--text3)', marginTop:3 }}>Memuat data bengkel…</div>}
+            </div>
 
             <div className="form-group">
               <label className="form-label">Status<span className="form-required"> *</span></label>
