@@ -31,6 +31,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDepo, setFilterDepo] = useState('');
+  const [filterNoPo, setFilterNoPo] = useState('');
   const [filterTglField, setFilterTglField] = useState('masuk'); // 'masuk' | 'keluar'
   const [filterTglFrom,  setFilterTglFrom]  = useState('');
   const [filterTglTo,    setFilterTglTo]    = useState('');
@@ -183,7 +184,8 @@ export default function App() {
     const q = search.toLowerCase();
     if (filterStatus && status !== filterStatus) return false;
     if (filterDepo && (r.DEPO || '').trim() !== filterDepo) return false;
-    if (q && !String(r.NOPOL||'').toLowerCase().includes(q) && !String(r.DRIVER||'').toLowerCase().includes(q)) return false;
+    if (filterNoPo && !String(r.NO_PO || '').toLowerCase().includes(filterNoPo.toLowerCase())) return false;
+    if (q && !String(r.NOPOL||'').toLowerCase().includes(q) && !String(r.DRIVER||'').toLowerCase().includes(q) && !String(r.NO_PO||'').toLowerCase().includes(q)) return false;
 
     // Filter tanggal
     if (filterTglFrom || filterTglTo) {
@@ -447,6 +449,7 @@ export default function App() {
                   search={search} setSearch={setSearch}
                   filterStatus={filterStatus} setFilterStatus={setFilterStatus}
                   filterDepo={filterDepo} setFilterDepo={setFilterDepo} depoList={depoList}
+                  filterNoPo={filterNoPo} setFilterNoPo={setFilterNoPo}
                   filterTglField={filterTglField} setFilterTglField={setFilterTglField}
                   filterTglFrom={filterTglFrom}   setFilterTglFrom={setFilterTglFrom}
                   filterTglTo={filterTglTo}       setFilterTglTo={setFilterTglTo}

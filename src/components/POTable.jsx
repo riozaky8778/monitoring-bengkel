@@ -8,6 +8,7 @@ export default function POTable({
   filterTglField, setFilterTglField,
   filterTglFrom,  setFilterTglFrom,
   filterTglTo,    setFilterTglTo,
+  filterNoPo,     setFilterNoPo,     // ← BARU
   setDetailRow, openEditForm, openHistoryModal,
   onDeleteRow
 }) {
@@ -17,7 +18,6 @@ export default function POTable({
     const tM = new Date(tglMasuk);
     const tK = new Date(tglKeluar);
     if (isNaN(tM) || isNaN(tK)) return null;
-    // Hitung selisih hari murni (abaikan jam), tanggal sama = 1 hari
     const hariM = new Date(tM.getFullYear(), tM.getMonth(), tM.getDate());
     const hariK = new Date(tK.getFullYear(), tK.getMonth(), tK.getDate());
     const selisih = Math.round((hariK - hariM) / (1000 * 60 * 60 * 24));
@@ -33,6 +33,19 @@ export default function POTable({
           <span className="table-count">{data.length} hasil</span>
         </div>
         <div className="filter-row" style={{ flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
+
+          {/* Filter No PO — BARU */}
+          <div className="filter-wrap">
+            <span className="filter-icon">#</span>
+            <input
+              className="filter-input"
+              style={{ width: 130 }}
+              placeholder="Cari No PO..."
+              value={filterNoPo}
+              onChange={e => { setFilterNoPo(e.target.value); setPage(1); }}
+            />
+          </div>
+
           {/* Filter Tanggal */}
           <select
             className="filter-select"
@@ -63,10 +76,10 @@ export default function POTable({
               onChange={e => { setFilterTglTo(e.target.value); setPage(1); }}
             />
           </div>
-          {hasFilterTgl && (
+          {(hasFilterTgl || filterNoPo) && (
             <button
               className="btn btn-sm btn-ghost"
-              onClick={() => { setFilterTglFrom(''); setFilterTglTo(''); setPage(1); }}
+              onClick={() => { setFilterTglFrom(''); setFilterTglTo(''); setFilterNoPo(''); setPage(1); }}
               style={{ color: 'var(--red-t)' }}
             >
               ✕ Reset
@@ -200,7 +213,6 @@ export default function POTable({
                     )}
                   </td>
 
-                  {/* Aksi — Edit + Riwayat + Hapus */}
                   <td style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center' }}>
                       <button className="btn btn-sm btn-ghost" onClick={() => openEditForm(r)} title="Edit PO">
