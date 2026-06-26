@@ -13,7 +13,6 @@ import './index.css';
 
 const PAGE_SIZE = 15;
 
-// Label breadcrumb per halaman
 const NAV_LABEL = {
   dashboard:  'Dashboard',
   perbaikan:  'Log Perbaikan',
@@ -32,7 +31,7 @@ export default function App() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDepo, setFilterDepo] = useState('');
   const [filterNoPo, setFilterNoPo] = useState('');
-  const [filterTglField, setFilterTglField] = useState('masuk'); // 'masuk' | 'keluar'
+  const [filterTglField, setFilterTglField] = useState('masuk');
   const [filterTglFrom,  setFilterTglFrom]  = useState('');
   const [filterTglTo,    setFilterTglTo]    = useState('');
   const [page, setPage] = useState(1);
@@ -46,7 +45,6 @@ export default function App() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [topAktivitasUnit, setTopAktivitasUnit] = useState(null);
 
-  /* ─── Data fetching ─── */
   const fetchData = useCallback(async () => {
     setLoading(true);
     if (IS_DEMO) {
@@ -70,7 +68,6 @@ export default function App() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Tutup sidebar saat layar diperbesar ke desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 768) setSidebarOpen(false);
@@ -79,13 +76,11 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  /* ─── Navigation ─── */
   const handleNav = (nav) => {
     setActiveNav(nav);
     setSidebarOpen(false);
   };
 
-  /* ─── Delete handler ─── */
   const handleDeleteConfirm = async () => {
     if (!deleteRow) return;
     setDeleteLoading(true);
@@ -103,13 +98,21 @@ export default function App() {
     }
   };
 
+  /* ─── Lookup NOPOL → COMPANY dari master kendaraan ─── */
+  const nopolToCompany = useMemo(() => {
+    const map = {};
+    kendaraan.forEach(k => {
+      if (k.NOPOL) map[String(k.NOPOL).trim().toUpperCase()] = k.COMPANY || 'LAINNYA';
+    });
+    return map;
+  }, [kendaraan]);
+
   /* ─── Stats & derived data ─── */
   const s = (() => {
     let selesai=0, proses=0, pending=0, totalBiaya=0;
     const bengkelCount = {};
     const depoCount = {};
-    const companyCount = {}; // ← BARU
-    const nopolToCompany = {}; // ← BARU: lookup dari master kendaraan
+    const companyCount = {};
     const monthlyLt = {};
     let totalLt = 0, countLt = 0;
 
@@ -126,6 +129,7 @@ export default function App() {
 
       const depo = (r.DEPO || 'Lainnya').trim();
       depoCount[depo] = (depoCount[depo] || 0) + 1;
+
       const nopolKey = String(r.NOPOL || '').trim().toUpperCase();
       const company = nopolToCompany[nopolKey] || 'LAINNYA';
       companyCount[company] = (companyCount[company] || 0) + 1;
@@ -146,16 +150,16 @@ export default function App() {
     });
 
     return {
-  total: allData.length, selesai, proses, pending, totalBiaya,
-  avgLeadtime: countLt > 0 ? (totalLt / countLt).toFixed(1) : 0,
-  bengkelCount, depoCount, companyCount, monthlyLt // ← tambah companyCount
-};
+      total: allData.length, selesai, proses, pending, totalBiaya,
+      avgLeadtime: countLt > 0 ? (totalLt / countLt).toFixed(1) : 0,
+      bengkelCount, depoCount, companyCount, monthlyLt
+    };
   })();
 
-  const topBengkel      = Object.entries(s.bengkelCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const maxBengkel      = topBengkel[0]?.[1] || 1;
-  const depoChartData   = Object.entries(s.depoCount).sort((a,b)=>b[1]-a[1]).map(([depo,count])=>({depo,count}));
-  const companyChartData = Object.entries(s.companyCount).sort((a,b)=>b[1]-a[1]).map(([depo,count])=>({depo,count})); // pakai key "depo" biar cocok sama DepoChart
+  const topBengkel        = Object.entries(s.bengkelCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxBengkel        = topBengkel[0]?.[1] || 1;
+  const depoChartData     = Object.entries(s.depoCount).sort((a,b)=>b[1]-a[1]).map(([depo,count])=>({depo,count}));
+  const companyChartData  = Object.entries(s.companyCount).sort((a,b)=>b[1]-a[1]).map(([depo,count])=>({depo,count}));
   const leadtimeChartData = Object.keys(s.monthlyLt).sort((a,b)=>a-b).map(m=>({
     bulan: parseInt(m), avg: Math.round((s.monthlyLt[m].sum / s.monthlyLt[m].count) * 10) / 10
   }));
@@ -183,7 +187,6 @@ export default function App() {
       .slice(0, 5);
   }, [allData, oneYearAgo]);
 
-  // Filter & pagination — khusus halaman Log Perbaikan
   const depoList = [...new Set(allData.map(r => (r.DEPO || '').trim()).filter(Boolean))].sort();
   const filteredData = allData.filter(r => {
     const status = statusOf(String(r.KETERANGAN || r.KET || ''));
@@ -193,7 +196,6 @@ export default function App() {
     if (filterNoPo && !String(r.NO_PO || '').toLowerCase().includes(filterNoPo.toLowerCase())) return false;
     if (q && !String(r.NOPOL||'').toLowerCase().includes(q) && !String(r.DRIVER||'').toLowerCase().includes(q) && !String(r.NO_PO||'').toLowerCase().includes(q)) return false;
 
-    // Filter tanggal
     if (filterTglFrom || filterTglTo) {
       const tglVal = filterTglField === 'masuk' ? r.TGL_MASUK : r.TGL_KELUAR;
       const tgl = new Date(tglVal);
@@ -207,18 +209,13 @@ export default function App() {
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
   const pagedData  = filteredData.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
 
-  /* ══════════════════════════════════════════════
-     RENDER
-  ══════════════════════════════════════════════ */
   return (
     <div className="layout">
 
-      {/* ── Modals ── */}
       {formOpen    && <POForm editRow={formRow} existingNoPo={allData.map(r => String(r.NO_PO).trim())} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); fetchData(); }} />}
       {detailRow   && <DetailBiaya row={detailRow} onClose={() => setDetailRow(null)} />}
       {historyRow  && <StatusHistoryModal row={historyRow} onClose={() => setHistoryRow(null)} />}
 
-      {/* Modal Konfirmasi Hapus */}
       {deleteRow && (
         <div className="overlay" onClick={() => !deleteLoading && setDeleteRow(null)}>
           <div className="modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
@@ -251,7 +248,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal Sukses Hapus */}
       {deleteSuccess && (
         <div className="overlay" onClick={() => setDeleteSuccess(false)}>
           <div className="modal" style={{ maxWidth:360 }} onClick={e => e.stopPropagation()}>
@@ -265,15 +261,12 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal Riwayat dari Top Aktivitas */}
       {topAktivitasUnit && (
         <RiwayatModal unit={topAktivitasUnit} poData={allData} onClose={() => setTopAktivitasUnit(null)} />
       )}
 
-      {/* Overlay gelap belakang sidebar (mobile) */}
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
-      {/* ══════════ SIDEBAR ══════════ */}
       <nav className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-logo">
           <div className="logo-badge">🔧</div>
@@ -288,7 +281,6 @@ export default function App() {
             <span className="nav-icon">📊</span> Dashboard
           </button>
 
-          {/* ← Halaman baru Log Perbaikan */}
           <button className={`nav-item ${activeNav==='perbaikan' ? 'active' : ''}`} onClick={() => handleNav('perbaikan')}>
             <span className="nav-icon">🗂️</span> Log Perbaikan
             <span className="nav-badge">{allData.length}</span>
@@ -322,10 +314,8 @@ export default function App() {
         </div>
       </nav>
 
-      {/* ══════════ MAIN AREA ══════════ */}
       <div className="main">
 
-        {/* ── Topbar ── */}
         <div className="topbar">
           <div className="topbar-left">
             <button className="hamburger-btn" onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle menu">
@@ -338,7 +328,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Tombol Refresh selalu muncul; Input PO hanya di halaman Log Perbaikan */}
           <div className="topbar-right">
             <button className="btn" onClick={fetchData}>↺ Refresh</button>
             {activeNav === 'perbaikan' && (
@@ -349,11 +338,9 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── Content area ── */}
         {loading ? <div className="spinner" style={{ margin:'50px auto' }} /> : (
           <div className="content" style={{ padding:0 }}>
 
-            {/* ════ HALAMAN: DASHBOARD ════ */}
             {activeNav === 'dashboard' && (
               <div className="content">
 
@@ -364,6 +351,8 @@ export default function App() {
                   <SummaryCard label="Selesai"           value={fmt(s.selesai)}      sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% Dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
                   <SummaryCard label="Total Biaya"       value={fmtRp(s.totalBiaya)} sub={`Avg ${s.avgLeadtime} hr leadtime`}                       icon="💰" accent="var(--red-t)"   iconBg="var(--red-dim)" />
                 </div>
+
+                <div className="charts-row">
                   <div className="chart-card">
                     <div className="chart-card-header"><div className="chart-title">Total Perbaikan By Company</div></div>
                     <DepoChart data={companyChartData} />
@@ -397,7 +386,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Top Aktivitas Perbaikan */}
                 {topAktivitas.length > 0 && (
                   <div className="chart-card" style={{ marginTop:0 }}>
                     <div className="chart-card-header">
@@ -445,7 +433,6 @@ export default function App() {
               </div>
             )}
 
-            {/* ════ HALAMAN: LOG PERBAIKAN ════ */}
             {activeNav === 'perbaikan' && (
               <div className="content">
                 <POTable
@@ -465,7 +452,6 @@ export default function App() {
               </div>
             )}
 
-            {/* ════ HALAMAN: DATA KENDARAAN ════ */}
             {activeNav === 'kendaraan' && (
               <DataKendaraan data={kendaraan} loading={loading} poData={allData} />
             )}
