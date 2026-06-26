@@ -1172,3 +1172,8 @@ td { padding: 11px 10px; max-width: 140px; }
   display: flex;
   align-items: center;
 }
+
+/* ── Filter row wrap fix ── */
+.table-header .filter-row {
+  justify-content: flex-start !important;
+}
