@@ -108,6 +108,8 @@ export default function App() {
     let selesai=0, proses=0, pending=0, totalBiaya=0;
     const bengkelCount = {};
     const depoCount = {};
+    const companyCount = {}; // ← BARU
+    const nopolToCompany = {}; // ← BARU: lookup dari master kendaraan
     const monthlyLt = {};
     let totalLt = 0, countLt = 0;
 
@@ -124,6 +126,9 @@ export default function App() {
 
       const depo = (r.DEPO || 'Lainnya').trim();
       depoCount[depo] = (depoCount[depo] || 0) + 1;
+      const nopolKey = String(r.NOPOL || '').trim().toUpperCase();
+      const company = nopolToCompany[nopolKey] || 'LAINNYA';
+      companyCount[company] = (companyCount[company] || 0) + 1;
 
       let lt = parseInt(r.LEADTIME);
       const tMasuk = new Date(r.TGL_MASUK);
@@ -141,15 +146,16 @@ export default function App() {
     });
 
     return {
-      total: allData.length, selesai, proses, pending, totalBiaya,
-      avgLeadtime: countLt > 0 ? (totalLt / countLt).toFixed(1) : 0,
-      bengkelCount, depoCount, monthlyLt
-    };
+  total: allData.length, selesai, proses, pending, totalBiaya,
+  avgLeadtime: countLt > 0 ? (totalLt / countLt).toFixed(1) : 0,
+  bengkelCount, depoCount, companyCount, monthlyLt // ← tambah companyCount
+};
   })();
 
   const topBengkel      = Object.entries(s.bengkelCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxBengkel      = topBengkel[0]?.[1] || 1;
   const depoChartData   = Object.entries(s.depoCount).sort((a,b)=>b[1]-a[1]).map(([depo,count])=>({depo,count}));
+  const companyChartData = Object.entries(s.companyCount).sort((a,b)=>b[1]-a[1]).map(([depo,count])=>({depo,count})); // pakai key "depo" biar cocok sama DepoChart
   const leadtimeChartData = Object.keys(s.monthlyLt).sort((a,b)=>a-b).map(m=>({
     bulan: parseInt(m), avg: Math.round((s.monthlyLt[m].sum / s.monthlyLt[m].count) * 10) / 10
   }));
@@ -358,11 +364,9 @@ export default function App() {
                   <SummaryCard label="Selesai"           value={fmt(s.selesai)}      sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% Dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
                   <SummaryCard label="Total Biaya"       value={fmtRp(s.totalBiaya)} sub={`Avg ${s.avgLeadtime} hr leadtime`}                       icon="💰" accent="var(--red-t)"   iconBg="var(--red-dim)" />
                 </div>
-
-                <div className="charts-row">
                   <div className="chart-card">
-                    <div className="chart-card-header"><div className="chart-title">Total Perbaikan By Depo</div></div>
-                    <DepoChart data={depoChartData} />
+                    <div className="chart-card-header"><div className="chart-title">Total Perbaikan By Company</div></div>
+                    <DepoChart data={companyChartData} />
                   </div>
                   <div className="chart-card">
                     <div className="chart-card-header">
