@@ -1140,3 +1140,35 @@ tbody tr:hover td { background: var(--surface2); }
 /* Tabel lebih compact supaya tidak terpotong di 100% zoom */
 th { padding: 10px 10px; }
 td { padding: 11px 10px; max-width: 140px; }
+
+/* ── Filter row alignment fix ── */
+.filter-row {
+  align-items: center;
+}
+
+.filter-select,
+.filter-input {
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.filter-row input[type="date"] {
+  height: 36px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+.filter-wrap {
+  height: 36px;
+}
+
+.filter-wrap .filter-input {
+  height: 36px;
+}
+
+/* Label "Dari" / "Sampai" sejajar vertikal dengan input */
+.filter-row > div {
+  display: flex;
+  align-items: center;
+}
