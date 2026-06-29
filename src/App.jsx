@@ -8,6 +8,7 @@ import DetailBiaya from './components/DetailBiaya';
 import StatusHistoryModal from './components/StatusHistoryModal';
 import { DonutChart, LeadtimeChart, DepoChart } from './components/Charts';
 import RiwayatModal from './components/RiwayatModal';
+import RekapBiaya from './components/RekapBiaya';
 import { statusOf, fmt, fmtRp, formatTgl } from './utils/helpers';
 import './index.css';
 
@@ -17,6 +18,7 @@ const NAV_LABEL = {
   dashboard:  'Dashboard',
   perbaikan:  'Log Perbaikan',
   kendaraan:  'Data Kendaraan',
+  rekapBiaya: 'Rekap Biaya',
 };
 
 export default function App() {
@@ -98,11 +100,22 @@ export default function App() {
     }
   };
 
-  /* ─── Lookup NOPOL → COMPANY dari master kendaraan ─── */
+  /* ─── Lookup NOPOL → Company Group (XPDC/TSMK/TMJA) ─── */
   const nopolToCompany = useMemo(() => {
     const map = {};
     kendaraan.forEach(k => {
-      if (k.NOPOL) map[String(k.NOPOL).trim().toUpperCase()] = k.COMPANY || 'LAINNYA';
+      const nopol = String(k.NOPOL || '').trim().toUpperCase();
+      if (!nopol) return;
+      const sumber = (k.SUMBER || '').toUpperCase();
+      const divisi = (k.DIVISI || '').toUpperCase();
+
+      let group;
+      if (sumber === 'PRIMARY') group = 'XPDC';
+      else if (sumber === 'INVENTARIS') group = 'TSMK';
+      else if (sumber === 'SECONDARY') group = divisi === 'AQUA' ? 'TSMK' : 'TMJA';
+      else group = 'LAINNYA';
+
+      map[nopol] = group;
     });
     return map;
   }, [kendaraan]);
@@ -168,24 +181,36 @@ export default function App() {
     const d = new Date(); d.setFullYear(d.getFullYear() - 1); return d;
   }, []);
 
-  const topAktivitas = useMemo(() => {
+  const topAktivitasGrouped = useMemo(() => {
     const map = {};
     allData.forEach(r => {
       const tgl = new Date(r.TGL_MASUK);
       if (isNaN(tgl) || tgl < oneYearAgo) return;
       const nopol = String(r.NOPOL || '').trim();
       if (!nopol) return;
-      if (!map[nopol]) map[nopol] = { nopol, jumlah: 0, totalBiaya: 0, lastTgl: null };
+      const nopolKey = nopol.toUpperCase();
+      const group = nopolToCompany[nopolKey] || 'LAINNYA';
+
+      if (!map[nopol]) map[nopol] = {
+        nopol, jumlah: 0, totalBiaya: 0, lastTgl: null,
+        group, depo: (r.DEPO || '').trim()
+      };
       map[nopol].jumlah++;
       map[nopol].totalBiaya += Number(r.TOTAL_BIAYA || r.BIAYA) || 0;
       if (!map[nopol].lastTgl || tgl > new Date(map[nopol].lastTgl)) {
         map[nopol].lastTgl = r.TGL_MASUK;
       }
     });
-    return Object.values(map)
-      .sort((a,b) => b.jumlah - a.jumlah || b.totalBiaya - a.totalBiaya)
-      .slice(0, 5);
-  }, [allData, oneYearAgo]);
+
+    const all = Object.values(map);
+    const sortFn = (a, b) => b.jumlah - a.jumlah || b.totalBiaya - a.totalBiaya;
+
+    return {
+      XPDC: all.filter(i => i.group === 'XPDC').sort(sortFn).slice(0, 10),
+      TSMK: all.filter(i => i.group === 'TSMK').sort(sortFn).slice(0, 10),
+      TMJA: all.filter(i => i.group === 'TMJA').sort(sortFn).slice(0, 10),
+    };
+  }, [allData, oneYearAgo, nopolToCompany]);
 
   const depoList = [...new Set(allData.map(r => (r.DEPO || '').trim()).filter(Boolean))].sort();
   const filteredData = allData.filter(r => {
@@ -291,6 +316,10 @@ export default function App() {
             <span className="nav-badge">{kendaraan.length}</span>
           </button>
 
+          <button className={`nav-item ${activeNav==='rekapBiaya' ? 'active' : ''}`} onClick={() => handleNav('rekapBiaya')}>
+            <span className="nav-icon">💰</span> Rekap Biaya
+          </button>
+
           <div className="sidebar-section" style={{ marginTop:8 }}>Status Real-time</div>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px' }}>
             <span style={{ fontSize:12, color:'var(--text2)' }}>✅ Selesai</span>
@@ -386,45 +415,68 @@ export default function App() {
                   </div>
                 </div>
 
-                {topAktivitas.length > 0 && (
-                  <div className="chart-card" style={{ marginTop:0 }}>
+                {(topAktivitasGrouped.XPDC.length > 0 || topAktivitasGrouped.TSMK.length > 0 || topAktivitasGrouped.TMJA.length > 0) && (
+                  <div className="chart-card" style={{ marginTop: 0 }}>
                     <div className="chart-card-header">
                       <div className="chart-title">📊 Top Aktivitas Perbaikan</div>
-                      <span style={{ fontSize:11, color:'var(--text3)' }}>1 tahun terakhir</span>
+                      <span style={{ fontSize: 11, color: 'var(--text3)' }}>1 tahun terakhir • Top 10 per company</span>
                     </div>
-                    <div style={{ display:'flex', flexDirection:'column', gap:5, padding:'2px 0 6px' }}>
-                      {topAktivitas.map((item, idx) => (
-                        <button
-                          key={item.nopol}
-                          onClick={() => setTopAktivitasUnit({ NOPOL: item.nopol })}
-                          style={{
-                            display:'flex', alignItems:'center', gap:10,
-                            background:'var(--surface2)', border:'1px solid var(--border)',
-                            borderRadius:'var(--radius-sm)', padding:'7px 12px',
-                            cursor:'pointer', textAlign:'left', width:'100%', transition:'background 0.15s',
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'var(--surface3)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'var(--surface2)'}
-                        >
+                    <div className="top-aktivitas-grid">
+                      {[
+                        { key: 'XPDC', label: 'XPDC', icon: '🚛', color: 'var(--purple-t)', bg: 'var(--purple-bg)' },
+                        { key: 'TSMK', label: 'TSMK', icon: '🏭', color: 'var(--blue-t)', bg: 'var(--blue-dim)' },
+                        { key: 'TMJA', label: 'TMJA', icon: '📦', color: 'var(--teal-t)', bg: 'var(--teal-bg)' },
+                      ].map(grp => (
+                        <div key={grp.key}>
                           <div style={{
-                            width:22, height:22, borderRadius:'50%', flexShrink:0,
-                            display:'flex', alignItems:'center', justifyContent:'center',
-                            fontWeight:800, fontSize:11,
-                            background: idx===0 ? '#FFD700' : idx===1 ? '#C0C0C0' : idx===2 ? '#CD7F32' : 'var(--surface3)',
-                            color: idx < 3 ? '#1a1a1a' : 'var(--text2)',
+                            fontSize: 12, fontWeight: 800, color: grp.color,
+                            marginBottom: 8, padding: '8px 12px',
+                            background: grp.bg, borderRadius: 'var(--radius-sm)',
+                            textAlign: 'center', letterSpacing: '0.5px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                           }}>
-                            {idx + 1}
+                            <span>{grp.icon}</span> {grp.label}
+                            <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>({topAktivitasGrouped[grp.key].length})</span>
                           </div>
-                          <div style={{ flex:1, minWidth:90 }}>
-                            <div className="td-nopol" style={{ fontSize:12 }}>{item.nopol}</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {topAktivitasGrouped[grp.key].length === 0 ? (
+                              <div style={{ color: 'var(--text3)', fontSize: 11, textAlign: 'center', padding: '20px 0' }}>
+                                Belum ada data
+                              </div>
+                            ) : topAktivitasGrouped[grp.key].map((item, idx) => (
+                              <button
+                                key={item.nopol}
+                                onClick={() => setTopAktivitasUnit({ NOPOL: item.nopol })}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 8,
+                                  background: 'var(--surface2)', border: '1px solid var(--border)',
+                                  borderRadius: 'var(--radius-sm)', padding: '6px 10px',
+                                  cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'background 0.15s',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'var(--surface3)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'var(--surface2)'}
+                              >
+                                <div style={{
+                                  width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontWeight: 800, fontSize: 10,
+                                  background: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : 'var(--surface3)',
+                                  color: idx < 3 ? '#1a1a1a' : 'var(--text2)',
+                                }}>
+                                  {idx + 1}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                                  <div className="td-nopol" style={{ fontSize: 11.5 }}>{item.nopol}</div>
+                                  <div style={{ fontSize: 9.5, color: 'var(--text3)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📍 {item.depo || '—'}</div>
+                                </div>
+                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                  <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--blue-t)', whiteSpace: 'nowrap' }}>{item.jumlah} PO</div>
+                                  <div style={{ fontSize: 9.5, fontWeight: 600, color: 'var(--green-t)', whiteSpace: 'nowrap', marginTop: 1 }}>{fmtRp(item.totalBiaya)}</div>
+                                </div>
+                              </button>
+                            ))}
                           </div>
-                          <div style={{ display:'flex', gap:14, alignItems:'center' }}>
-                            <span style={{ fontSize:12, fontWeight:700, color:'var(--blue-t)', whiteSpace:'nowrap' }}>📄 {item.jumlah} PO</span>
-                            <span style={{ fontSize:11, fontWeight:600, color:'var(--green-t)', whiteSpace:'nowrap' }}>💰 {fmtRp(item.totalBiaya)}</span>
-                            <span style={{ fontSize:11, color:'var(--text3)', whiteSpace:'nowrap' }}>🕒 {formatTgl(item.lastTgl) || '—'}</span>
-                          </div>
-                          <div style={{ fontSize:11, color:'var(--text3)', flexShrink:0 }}>›</div>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -454,6 +506,10 @@ export default function App() {
 
             {activeNav === 'kendaraan' && (
               <DataKendaraan data={kendaraan} loading={loading} poData={allData} />
+            )}
+
+            {activeNav === 'rekapBiaya' && (
+              <RekapBiaya allData={allData} nopolToCompany={nopolToCompany} />
             )}
 
           </div>
