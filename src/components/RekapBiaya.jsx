@@ -27,6 +27,7 @@ export default function RekapBiaya({ allData = [], nopolToCompany = {} }) {
     years.includes(currentYear) ? currentYear : (years[0] || currentYear)
   );
   const [activeTab, setActiveTab] = useState('depo');
+  const [search, setSearch] = useState('');
 
   /* ── Filter data by year ── */
   const yearData = useMemo(() => {
@@ -106,6 +107,12 @@ export default function RekapBiaya({ allData = [], nopolToCompany = {} }) {
 
     let rows = Object.values(map);
 
+    // Apply search filter
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      rows = rows.filter(r => r.label.toLowerCase().includes(q));
+    }
+
     if (activeTab === 'secondary') {
       const tsmk = rows.filter(r => r.company === 'TSMK').sort((a, b) => b.total - a.total);
       const tmja = rows.filter(r => r.company === 'TMJA').sort((a, b) => b.total - a.total);
@@ -114,7 +121,7 @@ export default function RekapBiaya({ allData = [], nopolToCompany = {} }) {
 
     rows.sort((a, b) => b.total - a.total);
     return { rows };
-  }, [yearData, activeTab, nopolToCompany]);
+  }, [yearData, activeTab, nopolToCompany, search]);
 
   /* ── Grand totals ── */
   const grandTotals = useMemo(() => {
@@ -234,17 +241,39 @@ export default function RekapBiaya({ allData = [], nopolToCompany = {} }) {
               <div className="table-title">Rekap Biaya</div>
               <span className="table-count">{grandTotals.poCount} PO</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, color: 'var(--text3)' }}>Tahun:</span>
-              <select
-                className="filter-select"
-                value={selectedYear}
-                onChange={e => setSelectedYear(Number(e.target.value))}
-              >
-                {years.map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div className="filter-wrap">
+                <span className="filter-icon" style={{ left: 8, top: '50%', transform: 'translateY(-50%)' }}>🔍</span>
+                <input
+                  type="text"
+                  className="filter-input"
+                  placeholder="Cari..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{ width: 180, paddingLeft: 28 }}
+                />
+                {search && (
+                  <button 
+                    onClick={() => setSearch('')}
+                    style={{
+                      position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                      border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text3)'
+                    }}
+                  >✕</button>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 11, color: 'var(--text3)' }}>Tahun:</span>
+                <select
+                  className="filter-select"
+                  value={selectedYear}
+                  onChange={e => setSelectedYear(Number(e.target.value))}
+                >
+                  {years.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
