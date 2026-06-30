@@ -378,7 +378,7 @@ export default function App() {
                   <SummaryCard label="Pending"           value={fmt(s.pending)}      sub="Menunggu alat/antrean"                                     icon="⏳" accent="var(--amber-t)" iconBg="var(--amber-bg)" />
                   <SummaryCard label="Sedang Proses"     value={fmt(s.proses)}       sub="Masih dibongkar"                                           icon="⚙️" accent="var(--blue-t)"  iconBg="var(--blue-dim)" />
                   <SummaryCard label="Selesai"           value={fmt(s.selesai)}      sub={`${s.total>0 ? Math.round(s.selesai/s.total*100) : 0}% Dari total`} icon="✅" accent="var(--green-t)" iconBg="var(--green-bg)" />
-                  <SummaryCard label="Total Biaya"       value={fmtRp(s.totalBiaya)} sub={`Avg ${s.avgLeadtime} hr leadtime`}                       icon="💰" accent="var(--red-t)"   iconBg="var(--red-dim)" />
+                  <SummaryCard label="Total Biaya"       value={fmtRp(s.totalBiaya)} sub={`Avg ${s.avgLeadtime} hari leadtime`}                       icon="💰" accent="var(--red-t)"   iconBg="var(--red-dim)" />
                 </div>
 
                 <div className="charts-row">

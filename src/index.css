@@ -401,7 +401,7 @@ body {
 ══════════════════════════════════════ */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   margin-bottom: 22px;
 }
@@ -1195,6 +1195,9 @@ tbody tr:hover td { background: var(--surface2); }
 /* ══════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════ */
+@media (max-width: 1400px) {
+  .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+}
 @media (max-width: 1200px) {
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
   .charts-row   { grid-template-columns: 1fr 1fr; }
