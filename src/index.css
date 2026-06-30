@@ -1196,10 +1196,10 @@ tbody tr:hover td { background: var(--surface2); }
 /* ══════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════ */
-@media (max-width: 1400px) {
+@media (max-width: 1100px) {
   .metrics-grid { grid-template-columns: repeat(3, 1fr); }
 }
-@media (max-width: 1200px) {
+@media (max-width: 800px) {
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
   .charts-row   { grid-template-columns: 1fr 1fr; }
   .table-wrap   { overflow-x: auto; -webkit-overflow-scrolling: touch; }
