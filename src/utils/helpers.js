@@ -11,7 +11,10 @@ export const toDateInput = (tgl) => {
   if (!tgl) return '';
   const d = new Date(tgl);
   if (isNaN(d)) return '';
-  return d.toISOString().split('T')[0];
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 };
 
 export const fmtRp = (num) => {

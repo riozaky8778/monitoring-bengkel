@@ -288,7 +288,12 @@ export default function POForm({ editRow, onClose, onSaved, existingNoPo = [] })
       const res = await apiPost({
         action: isEdit ? 'updatePO' : 'savePO',
         po: poToSave,
-        items: items.filter(i => String(i.NAMA).trim()).map(i => ({ ...i, NAMA: String(i.NAMA).toUpperCase() })),
+        items: items.filter(i => String(i.NAMA).trim()).map(i => ({
+          ...i,
+          NAMA: String(i.NAMA).toUpperCase(),
+          QTY: Number(i.QTY) || 0,
+          HARGA: Number(i.HARGA) || 0,
+        })),
       });
       if (res && res.error) { alert('❌ ' + res.error); setSaving(false); return; }
 
